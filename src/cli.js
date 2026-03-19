@@ -30,6 +30,10 @@ import {
   TransactionHistory,
   buildBilateralFromHistory,
 } from './bilateral.js';
+import {
+  buildServiceHandler,
+  parseServiceHandler,
+} from './handler.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -55,6 +59,8 @@ async function main() {
       return cmdHistory();
     case 'attest':
       return cmdAttest();
+    case 'handler':
+      return cmdHandler();
     default:
       console.log(`NIP Agent Reputation — Reference Implementation v0.2
 
@@ -70,6 +76,10 @@ Bilateral attestations:
   node src/cli.js history [node_pubkey] Show transaction history
   node src/cli.js attest <node_pubkey> [--nostr <npub>] [--service <type>]
                                        Build & publish bilateral attestation
+
+Service handlers:
+  node src/cli.js handler --id <service_id> --desc <description> [--price <sats>] [--protocol <L402|bolt11>] [--endpoint <url>]
+                                       Publish service handler declaration (kind 31990)
 `);
       process.exit(1);
   }
@@ -317,6 +327,64 @@ async function cmdAttest() {
   console.log(`\nPublishing to ${DEFAULT_RELAYS.length} relays...`);
   const results = await publishToRelays(event);
 
+  console.log(`\nResults:`);
+  console.log(`  Accepted: ${results.accepted.length}`);
+  for (const r of results.accepted) console.log(`    ✓ ${r}`);
+  console.log(`  Rejected: ${results.rejected.length}`);
+  for (const r of results.rejected) console.log(`    ✗ ${r.relay}: ${r.error}`);
+}
+
+async function cmdHandler() {
+  const args = process.argv.slice(3);
+  
+  const getArg = (flag) => {
+    const idx = args.indexOf(flag);
+    return idx >= 0 ? args[idx + 1] : undefined;
+  };
+  
+  const serviceId = getArg('--id');
+  const description = getArg('--desc');
+  if (!serviceId || !description) {
+    console.error('Usage: node src/cli.js handler --id <service_id> --desc <description> [--price <sats>] [--protocol <L402|bolt11>] [--endpoint <url>]');
+    process.exit(1);
+  }
+  
+  const price = getArg('--price');
+  const protocol = getArg('--protocol') || 'L402';
+  const endpoint = getArg('--endpoint');
+  
+  // Get our node pubkey from LND
+  let nodePubkey;
+  try {
+    const metrics = await collectLndMetrics();
+    nodePubkey = metrics.pubkey;
+    console.log(`Node: ${nodePubkey.slice(0, 16)}...`);
+  } catch {
+    console.log('Warning: Could not reach LND. Publishing without node_pubkey.');
+  }
+  
+  const kp = getKeypair();
+  console.log(`Publishing as: ${kp.npub}\n`);
+  
+  const event = buildServiceHandler({
+    serviceId,
+    description,
+    price,
+    protocol,
+    endpoint,
+    nodePubkey,
+  }, kp.secretKey);
+  
+  console.log(`Event ID: ${event.id}`);
+  console.log(`Kind: ${event.kind}`);
+  console.log(`Service: ${serviceId}`);
+  console.log(`Description: ${description}`);
+  if (price) console.log(`Price: ${price} sats`);
+  if (endpoint) console.log(`Endpoint: ${endpoint}`);
+  
+  console.log(`\nPublishing to ${DEFAULT_RELAYS.length} relays...`);
+  const results = await publishToRelays(event);
+  
   console.log(`\nResults:`);
   console.log(`  Accepted: ${results.accepted.length}`);
   for (const r of results.accepted) console.log(`    ✓ ${r}`);

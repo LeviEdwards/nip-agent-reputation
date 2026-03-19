@@ -1,6 +1,6 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v0.1
+**Status:** DRAFT v0.4
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
 **Last Updated:** 2026-03-19
@@ -149,6 +149,32 @@ No composite score is prescribed. Different use cases weight dimensions differen
 - A data API consumer cares about `response_time_ms` and `uptime_percent`
 - A channel partner cares about `capacity_sats` and `payment_success_rate`
 
+### Querier Behavior: Self-Attestation Only
+
+When all attestations for a subject are `self` type:
+
+1. The aggregated `totalWeight` will be ≤ 0.3 (since self-attestations carry 0.3 type weight)
+2. Queriers SHOULD treat `totalWeight < 0.5` as **low confidence** — no external validation exists
+3. Recommended thresholds:
+   - `totalWeight >= 1.0` — sufficient confidence for automated decisions
+   - `0.5 <= totalWeight < 1.0` — moderate confidence, may require additional signals
+   - `totalWeight < 0.5` — low confidence, self-reported only, treat as unverified
+4. Queriers MAY display self-only attestations with a visual indicator (e.g., "⚠ self-reported only")
+5. Self-only status is itself a signal: the agent either has no transaction partners or none have attested
+
+### Stale Service Detection
+
+A service may become inactive without explicit removal. Queriers detect this via decay:
+
+1. If all attestations for a service have effective weight below a threshold (recommended: `0.05`), the service is likely inactive
+2. Specifically: `effectiveWeight = decayWeight × typeWeight`. If `max(effectiveWeight) < 0.05` across all attestations, flag as stale
+3. A 30-day half-life attestation reaches 0.05 effective weight after approximately 130 days (for bilateral) or 37 days (for self)
+4. Queriers SHOULD:
+   - Display stale services with an indicator (e.g., "last attested 6 months ago")
+   - Exclude stale services from automated discovery results
+   - NOT delete stale attestations — they provide historical record
+5. Service providers SHOULD publish periodic self-attestation updates (weekly or monthly) to signal liveness
+
 ### Privacy Considerations
 
 - Attestations reveal transaction relationships between pubkeys
@@ -175,6 +201,20 @@ No composite score is prescribed. Different use cases weight dimensions differen
 - [x] Event ID: `eb12c36dcd1384e2061094782f5f575bd30989047483423fff8141ec5a00440a`
 - [x] **Discovered spec bug:** `p` tag cannot hold LND node pubkeys (33-byte / 66 hex compressed secp256k1). Nostr `p` tags expect 32-byte (64 hex) x-only pubkeys. Fix: use `node_pubkey` custom tag for LND pubkey; reserve `p` tag for agent's Nostr identity if available.
 - [x] Spec updated with `node_pubkey` tag clarification and warning note
+
+### v0.4 (2026-03-19) — Integration Test + Handler Declaration + Edge Cases
+- [x] Built `src/handler.js`: `buildServiceHandler()`, `parseServiceHandler()`, `queryServiceHandlers()` — kind 31990 handler declaration
+- [x] CLI command added: `handler` — publish service handler declaration with `--id`, `--desc`, `--price`, `--protocol`, `--endpoint` flags
+- [x] Built `src/test-integration.js`: 64/64 tests pass — full lifecycle: handler → transactions → bilateral attest → self attest → aggregation → edge cases
+- [x] **Phase 1-4:** Handler declaration, transaction recording, bilateral + self attestation build/verify — all green
+- [x] **Phase 5:** Aggregation confirmed: bilateral (weight 1.0) dominates self (weight 0.3). Math: (0.97×0.3 + 0.8×1.0)/1.3 = 0.839
+- [x] **Phase 6:** Self-only edge case validated: totalWeight=0.3, below 0.5 trust threshold → flags as unverified
+- [x] **Phase 7:** Stale service detection validated: 180-day-old self-attestation has effective weight 0.005 (< 0.05 threshold)
+- [x] **Phase 8:** Future timestamp clamping confirmed: decay clamped to 1.0, negative age detected
+- [x] **Phase 9:** Multi-attester aggregation (3 attesters): weighted avg 0.909 — math checks out
+- [x] **Phase 10:** Full JSON serialization round-trip for handler events, bilateral events, and transaction history
+- [x] Spec updated: added "Querier Behavior: Self-Attestation Only" section with trust threshold recommendations
+- [x] Spec updated: added "Stale Service Detection" section with decay-based inactivity detection
 
 ### v0.3 (2026-03-19) — Bilateral Attestation Implementation + Live Test
 - [x] Built `src/bilateral.js`: `TransactionRecord`, `TransactionHistory`, `buildBilateralAttestation()`, `buildBilateralFromHistory()`
@@ -219,12 +259,12 @@ No composite score is prescribed. Different use cases weight dimensions differen
 - [x] Write a query client that aggregates attestations for a given pubkey (CLI: `node src/cli.js query <pubkey>`)
 - [x] Replace relay.nostr.band (down) with relay.primal.net — confirmed working
 
-### TODO — v0.3 (MOSTLY COMPLETE)
+### TODO — v0.3 (COMPLETE)
 - [x] Reference implementation for bilateral attestation (post-transaction auto-publish)
 - [x] Aggregation library (takes N attestations, applies decay, returns weighted dimensions) — built into attestation.js
-- [ ] Edge case: what happens when an agent has only self-attestations? (document recommended querier behavior)
-- [ ] Edge case: attestation for a service that no longer exists (stale service detection)
-- [ ] Integration test: full cycle (declare handler → transact → bilateral attest → query)
+- [x] Edge case: what happens when an agent has only self-attestations? (document recommended querier behavior) — spec section added + tested
+- [x] Edge case: attestation for a service that no longer exists (stale service detection) — spec section added + tested
+- [x] Integration test: full cycle (declare handler → transact → bilateral attest → query) — 64/64 tests pass
 
 ### TODO — v0.4
 - [ ] Get feedback from 34b4 and fc29 on the spec
