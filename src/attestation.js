@@ -116,32 +116,40 @@ export async function queryAttestations(subjectPubkey, relays = DEFAULT_RELAYS, 
   const pool = new SimplePool();
   const serviceType = opts.serviceType || null;
   
-  // If querying by Nostr pubkey (64 hex), use #p filter
-  // If querying by LND pubkey (66 hex), search by author or fetch by label and post-filter
-  const filter = {
-    kinds: [30078],
-    '#L': ['agent-reputation'],
-  };
+  const baseFilter = { kinds: [30078] };
+  if (opts.since) baseFilter.since = opts.since;
+  if (opts.limit) baseFilter.limit = opts.limit;
   
-  if (subjectPubkey.length === 64) {
-    filter['#p'] = [subjectPubkey];
-  }
-  // For LND pubkeys, we can't efficiently relay-filter, so we fetch by label
-  // and post-filter in the parsing step
-  
-  if (opts.since) filter.since = opts.since;
-  if (opts.limit) filter.limit = opts.limit;
+  let allEvents = [];
   
   try {
-    const events = await pool.querySync(relays, filter);
+    if (subjectPubkey.length === 64) {
+      // Nostr pubkey: query via #p tag (bilateral attestations) AND via author (self-attestations)
+      // Both are valid: self-attesting nodes may or may not include p tag on older events
+      const [byP, byAuthor] = await Promise.all([
+        pool.querySync(relays, { ...baseFilter, '#p': [subjectPubkey] }),
+        pool.querySync(relays, { ...baseFilter, authors: [subjectPubkey] }),
+      ]);
+      // Merge and deduplicate by event ID
+      const seen = new Set();
+      for (const e of [...byP, ...byAuthor]) {
+        if (!seen.has(e.id)) { seen.add(e.id); allEvents.push(e); }
+      }
+    } else if (subjectPubkey.length === 66) {
+      // LND node pubkey: can't filter by relay tag efficiently; fetch agent-reputation events
+      // and post-filter by node_pubkey tag
+      allEvents = await pool.querySync(relays, { ...baseFilter, '#L': ['agent-reputation'] });
+    } else {
+      throw new Error(`Unknown pubkey format (length ${subjectPubkey.length}); expected 64 (Nostr) or 66 (LND)`);
+    }
     
-    // Parse and filter
-    let parsed = events
+    // Parse, verify, and filter
+    let parsed = allEvents
       .filter(e => verifyEvent(e))
       .map(e => parseAttestation(e))
       .filter(a => !serviceType || a.serviceType === serviceType);
     
-    // If querying by LND pubkey, post-filter
+    // Post-filter by LND pubkey if that was the query
     if (subjectPubkey.length === 66) {
       parsed = parsed.filter(a => a.nodePubkey === subjectPubkey);
     }

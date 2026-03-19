@@ -86,7 +86,7 @@ async function cmdPublish() {
   const kp = getKeypair();
   console.log(`\nPublishing as: ${kp.npub}`);
   
-  const event = buildSelfAttestation(metrics, kp.secretKey);
+  const event = buildSelfAttestation(metrics, kp.secretKey, { nostrPubkey: kp.publicKey });
   console.log(`Event ID: ${event.id}`);
   console.log(`Event kind: ${event.kind}`);
   console.log(`Tags: ${event.tags.length}`);
