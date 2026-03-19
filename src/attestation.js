@@ -16,7 +16,7 @@ useWebSocketImplementation(WebSocket);
 const DEFAULT_RELAYS = [
   'wss://relay.damus.io',
   'wss://nos.lol',
-  'wss://relay.nostr.band',
+  'wss://relay.primal.net',
   'wss://relay.snort.social',
 ];
 
@@ -181,7 +181,7 @@ export function parseAttestation(event) {
   
   const ageHours = (Date.now() / 1000 - event.created_at) / 3600;
   const halfLife = parseFloat(getTag('half_life_hours') || '720');
-  const decayWeight = Math.pow(2, -ageHours / halfLife);
+  const decayWeight = Math.min(1.0, Math.max(0, Math.pow(2, -ageHours / halfLife)));
   
   let content = {};
   try { content = JSON.parse(event.content); } catch {}
