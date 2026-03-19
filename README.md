@@ -42,14 +42,17 @@ The `d` tag identifies the subject being attested:
 
 ### Attestation Format
 
+> **Note:** The `p` tag in Nostr events MUST be a 32-byte (64 hex) Nostr pubkey (x-only secp256k1). LND node pubkeys are 33-byte compressed secp256k1 (66 hex) and MUST NOT be used in `p` tags. Use `node_pubkey` tag instead.
+
 ```json
 {
   "kind": 30078,
-  "pubkey": "<attester_pubkey>",
+  "pubkey": "<attester_nostr_pubkey>",
   "created_at": <unix_timestamp>,
   "tags": [
-    ["d", "<subject_pubkey>:<service_type>"],
-    ["p", "<subject_pubkey>"],
+    ["d", "<lnd_node_pubkey>:<service_type>"],
+    ["node_pubkey", "<lnd_node_pubkey_66hex>"],
+    ["p", "<subject_nostr_pubkey_64hex>"],
     ["service_type", "<free_text_service_type>"],
     ["dimension", "payment_success_rate", "0.97", "47"],
     ["dimension", "response_time_ms", "1200", "47"],
@@ -161,6 +164,20 @@ No composite score is prescribed. Different use cases weight dimensions differen
 
 ## Build Progress
 
+
+### v0.2 (2026-03-19) — Reference Implementation + Live Relay Test
+- [x] Built Node.js reference implementation (`src/cli.js`, `src/lnd.js`, `src/attestation.js`, `src/keys.js`)
+- [x] Collected real metrics from LND: 2 active channels, 20/20 payments succeeded (100% success rate), 1.4M sats capacity, 100% uptime
+- [x] Published kind 30078 self-attestation to 4 relays: relay.damus.io, nos.lol, relay.nostr.band, relay.snort.social — **all 4 accepted**
+- [x] Event ID: `8490b52434b41b75d044e6f47f0ca282413b1e0db53c3a49393863c8206f9258`
+- [x] **Discovered spec bug:** `p` tag cannot hold LND node pubkeys (33-byte / 66 hex compressed secp256k1). Nostr `p` tags expect 32-byte (64 hex) x-only pubkeys. Fix: use `node_pubkey` custom tag for LND pubkey; reserve `p` tag for agent's Nostr identity if available.
+- [x] Spec updated with `node_pubkey` tag clarification and warning note
+- [ ] Query returned 0 results — possible relay propagation delay or filter mismatch. Next: debug with direct relay query.
+
+**Publishing keypair (attestation-only, no funds):**
+- npub: `npub1rwm6u3czqv63xzuk2n3uzd3nlyjyd3r306zelq45de3kxyvvd6ksfdw2wu`
+- nsec saved in `.nostr-nsec` (git-ignored)
+
 ### v0.1 (2026-03-19) — Initial Draft
 - [x] Core event format defined
 - [x] 6 standard dimensions specified
@@ -171,9 +188,9 @@ No composite score is prescribed. Different use cases weight dimensions differen
 - [x] Privacy and security considerations
 
 ### TODO — v0.2
-- [ ] Write reference implementation (Node.js) that publishes self-attestation from our LND data
-- [ ] Test: publish a real kind 30078 event to relays with our actual node metrics
-- [ ] Test: query and parse the attestation back
+- [x] Write reference implementation (Node.js) that publishes self-attestation from our LND data
+- [x] Test: publish a real kind 30078 event to relays with our actual node metrics
+- [ ] Test: query and parse the attestation back  ← NEXT (query returned 0 — relay propagation delay? filter issue?)
 - [ ] Validate decay math with real timestamps
 - [ ] Get feedback from 34b4 and fc29 on the spec
 - [ ] Consider: should service_type be from a controlled vocabulary or free text?

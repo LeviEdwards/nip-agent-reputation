@@ -1,0 +1,26 @@
+{
+  "name": "nip-agent-reputation",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "**Status:** DRAFT v0.1 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2) **Created:** 2026-03-19 **Last Updated:** 2026-03-19",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://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@github.com/LeviEdwards/nip-agent-reputation.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LeviEdwards/nip-agent-reputation/issues"
+  },
+  "homepage": "https://github.com/LeviEdwards/nip-agent-reputation#readme",
+  "dependencies": {
+    "@noble/hashes": "^2.0.1",
+    "nostr-tools": "^2.23.3",
+    "websocket-polyfill": "^1.0.0"
+  }
+}
