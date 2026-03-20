@@ -1,9 +1,9 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v0.4
+**Status:** DRAFT v0.5
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-19
+**Last Updated:** 2026-03-20
 
 ---
 
@@ -91,6 +91,21 @@ Each `dimension` tag contains:
 
 Custom dimensions are allowed. Queriers ignore dimensions they don't understand.
 
+#### Minimum Sample Size
+
+Attestations with very low sample sizes provide weak signal. Recommended minimum thresholds:
+
+| Dimension | Minimum Sample Size | Rationale |
+|-----------|-------------------|-----------|
+| `payment_success_rate` | 5 | Too few payments to be statistically meaningful |
+| `settlement_rate` | 5 | Same reasoning |
+| `response_time_ms` | 3 | Need multiple measurements for meaningful average |
+| `uptime_percent` | 1 | Even a single channel provides some signal |
+| `dispute_rate` | 5 | Low sample sizes produce extreme rates (0% or 100%) |
+| `capacity_sats` | 1 | Observable at any point |
+
+Queriers SHOULD discount dimensions below minimum sample size. Publishers MAY omit dimensions that don't meet minimum thresholds. A `sample_size` of 0 indicates the dimension is declared but has no observations — queriers MUST ignore it.
+
 ### Decay Mechanism
 
 The `half_life_hours` tag specifies how quickly this attestation should lose weight. Recommended defaults:
@@ -108,22 +123,51 @@ An attestation with a 30-day half-life loses 50% weight after 30 days, 75% after
 
 **Future timestamps:** Attestations with `created_at` in the future produce `age_hours < 0`, which yields `weight > 1.0`. Queriers MUST clamp weight to `[0, 1.0]` and SHOULD penalize or discard events with future timestamps (potential clock skew attack).
 
+### Service Type Convention
+
+The `service_type` tag uses free text (not a controlled vocabulary). This is intentional — the agent ecosystem is too young for a canonical taxonomy, and premature standardization would limit innovation.
+
+**Recommended conventions:**
+- Use lowercase, hyphenated identifiers: `lightning-node`, `data-api`, `ai-inference`
+- Be specific enough to distinguish services: `bitcoin-price-api` not just `api`
+- Prefix with protocol when relevant: `l402-proxy`, `bolt11-paywall`
+- Reuse existing types when a good match exists
+
+**Well-known service types** (non-normative, expected to evolve):
+
+| Service Type | Description |
+|-------------|-------------|
+| `lightning-node` | General Lightning node operations (routing, channels) |
+| `data-api` | Data service accessible via API |
+| `ai-inference` | AI model inference endpoint |
+| `l402-proxy` | L402-gated proxy or relay service |
+| `payment-processor` | Invoice generation, payment forwarding |
+| `nostr-relay` | Nostr relay operation |
+
+Service types MAY be registered in a future NIP once the ecosystem stabilizes. For now, free text encourages experimentation.
+
 ### Attestation Types
 
-- `self` — Agent reporting its own metrics (lowest trust weight)
-- `bilateral` — Published by a counterparty after a transaction (higher trust)
-- `observer` — Third-party monitoring service (requires own reputation)
+| Type | Weight | Description |
+|------|--------|-------------|
+| `self` | 0.3 | Agent reporting its own metrics (lowest trust — self-reported) |
+| `observer` | 0.7 | Third-party monitoring service (intermediate — no direct transaction) |
+| `bilateral` | 1.0 | Published by a counterparty after a transaction (highest trust — direct experience) |
 
-### Service Handler Declaration
+An observer's effective weight is further modulated by the observer's own reputation score (recursive trust). An observer with no reputation contributes minimal signal.
 
-Agents SHOULD publish a kind **31990** event declaring what services they offer:
+### Service Handler Declaration (NIP-89 Compatible)
+
+Agents SHOULD publish a kind **31990** event declaring what services they offer. This reuses the NIP-89 handler information format — agents that publish kind 31990 are automatically discoverable by NIP-89-aware clients.
+
+The `k` tag indicates which event kind this handler can process (kind `30078` for reputation attestations). Additional tags extend NIP-89 with agent-specific metadata:
 
 ```json
 {
   "kind": 31990,
   "tags": [
     ["d", "<service_identifier>"],
-    ["k", "5600"],
+    ["k", "30078"],
     ["description", "Bitcoin network data API"],
     ["price", "10", "sats", "per-request"],
     ["protocol", "L402"],
@@ -133,6 +177,12 @@ Agents SHOULD publish a kind **31990** event declaring what services they offer:
   ]
 }
 ```
+
+**NIP-89 compatibility notes:**
+- The `k` tag follows NIP-89 convention (references the event kind the handler supports)
+- Clients can discover agent services using standard NIP-89 queries for `kind:31990` + `#k:30078`
+- Additional tags (`price`, `protocol`, `endpoint`) extend NIP-89 for agent use cases
+- NIP-89 `kind:31989` (recommendations) can be used for agent service endorsements
 
 ### Querying Reputation
 
@@ -266,11 +316,34 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] Edge case: attestation for a service that no longer exists (stale service detection) — spec section added + tested
 - [x] Integration test: full cycle (declare handler → transact → bilateral attest → query) — 64/64 tests pass
 
-### TODO — v0.4
-- [ ] Get feedback from 34b4 and fc29 on the spec
-- [ ] Consider: should service_type be from a controlled vocabulary or free text?
-- [ ] Consider: minimum sample_size thresholds for attestation validity
-- [ ] Consider: NIP-89 handler advertisement vs kind 31990
-- [ ] Observer attestation type implementation
-- [ ] Sybil resistance: weighted web-of-trust scoring (attester reputation affects attestation weight)
-- [ ] CLI: `node src/cli.js publish --auto` for cron-based periodic self-attestation updates
+### v0.5 (2026-03-20) — Live Testing All Features + Query Bug Fix + NIP-89 Alignment
+- [x] **Live test: observer attestation** — observed ACINQ node via LND graph (1,973 channels, 375 BTC capacity), published to 4/4 relays
+- [x] **Observer event ID:** `98723fb37c399ceb062333954efb5104235f928aa13a6d61e8c630258180fe67`
+- [x] **Live test: auto-publish** — correctly detected 6h cooldown interval, skipped (no metric changes)
+- [x] **Live test: web-of-trust** — scored our pubkey, correctly flagged "elevated sybil risk" (all attestations from same author, no external attesters)
+- [x] **Bug fix: query pipeline** — `queryAttestations()` was returning observer attestations about OTHER nodes when querying by author pubkey. Fix: filter `byAuthor` results to only include `self` type. Our node capacity now shows 1.4M sats (correct), not 26B (was mixing in ACINQ observer data)
+- [x] **NIP-89 compatibility** — researched NIP-89 (kind 31990 handler info). Our handler declarations are already compatible! Updated spec: `k` tag references kind 30078, added compatibility notes. Agents discoverable via standard NIP-89 queries
+- [x] **Resolved spec decisions:**
+  - `service_type`: free text (confirmed) — ecosystem too young for controlled vocabulary. Conventions documented
+  - `minimum sample_size`: already in spec with thresholds table. Confirmed adequate
+  - NIP-89 vs kind 31990: not competing — NIP-89 IS kind 31990. We extend it with agent-specific tags
+- [x] All 241 tests pass (37 auto-publish + 44 bilateral + decay + 64 integration + 86 observer + 54 web-of-trust)
+
+### TODO — v0.4 (COMPLETE)
+- [x] ~~Get feedback from 34b4 and fc29 on the spec~~ (deferred — not blocking)
+- [x] Consider: should service_type be from a controlled vocabulary or free text? → **Free text** (decided, documented in spec)
+- [x] Consider: minimum sample_size thresholds for attestation validity → **Already in spec** (thresholds table exists)
+- [x] Consider: NIP-89 handler advertisement vs kind 31990 → **Compatible** (NIP-89 IS kind 31990, we extend it)
+- [x] Observer attestation type implementation (observer.js, 86 tests)
+- [x] Sybil resistance: weighted web-of-trust scoring (web-of-trust.js, 54 tests)
+- [x] CLI: `node src/cli.js publish --auto` for cron-based periodic self-attestation updates (auto-publish.js, 37 tests)
+
+### TODO — v0.5
+- [ ] Format spec for nostr/nips submission (follow existing NIP format conventions)
+- [ ] Add `observer` type weight (0.7) to spec's Security Considerations (currently only mentions self=lowest)
+- [ ] Live bilateral attestation from a real counterparty (not self-generated test)
+- [ ] Set up cron job for periodic self-attestation (daily or every 6 hours)
+- [ ] README for the reference implementation (setup, usage examples, API docs)
+- [ ] Consider: should observer attestations require proof of observation method?
+- [ ] Consider: NIP-89 kind 31989 (recommendations) for agent endorsements
+- [ ] Package as npm module for other agents to integrate

@@ -6,6 +6,8 @@
  * Usage:
  *   node src/cli.js collect          — Gather LND metrics (dry run, no publish)
  *   node src/cli.js publish          — Collect metrics and publish self-attestation
+ *   node src/cli.js publish --auto   — Auto-publish if metrics changed or interval exceeded
+ *   node src/cli.js publish --force  — Force publish regardless of state
  *   node src/cli.js query <pubkey>   — Query attestations for a pubkey
  *   node src/cli.js verify <event_json> — Verify and parse an attestation event
  *   node src/cli.js attest <node_pubkey> [--nostr <nostr_pubkey>] [--service <type>]
@@ -13,6 +15,9 @@
  *   node src/cli.js record <node_pubkey> <amount_sats> [settled|failed] [--time <ms>] [--dispute]
  *                                    — Record a transaction for bilateral attestation
  *   node src/cli.js history [node_pubkey] — Show transaction history
+ *   node src/cli.js observe <node_pubkey> [--publish] [--nostr <nostr_pubkey>] [--service <type>]
+ *                                    — Observe a node via LND graph + build observer attestation
+ *   node src/cli.js trust <pubkey>   — Web-of-trust scoring (recursive attester reputation)
  */
 
 import { getKeypair } from './keys.js';
@@ -34,6 +39,17 @@ import {
   buildServiceHandler,
   parseServiceHandler,
 } from './handler.js';
+import {
+  ObservationSession,
+  buildObserverAttestation,
+  observeNodeFromGraph,
+} from './observer.js';
+import { WebOfTrust } from './web-of-trust.js';
+import {
+  shouldPublish,
+  recordPublish,
+  loadState,
+} from './auto-publish.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -61,12 +77,19 @@ async function main() {
       return cmdAttest();
     case 'handler':
       return cmdHandler();
+    case 'observe':
+      return cmdObserve();
+    case 'trust':
+      return cmdTrust();
     default:
-      console.log(`NIP Agent Reputation — Reference Implementation v0.2
+      console.log(`NIP Agent Reputation — Reference Implementation v0.4
 
 Usage:
   node src/cli.js collect              Gather LND metrics (dry run)
   node src/cli.js publish              Publish self-attestation to relays
+  node src/cli.js publish --auto       Auto-publish (skip if no meaningful change)
+  node src/cli.js publish --force      Force publish regardless of state
+  node src/cli.js publish --auto --json  Auto-publish with JSON output (for cron)
   node src/cli.js query <pubkey>       Query attestations for a pubkey
   node src/cli.js verify '<event_json>' Verify and parse an event
 
@@ -77,9 +100,17 @@ Bilateral attestations:
   node src/cli.js attest <node_pubkey> [--nostr <npub>] [--service <type>]
                                        Build & publish bilateral attestation
 
+Observer attestations:
+  node src/cli.js observe <node_pubkey> [--publish] [--nostr <npub>] [--service <type>]
+                                       Observe node via LND graph + build observer attestation
+
 Service handlers:
   node src/cli.js handler --id <service_id> --desc <description> [--price <sats>] [--protocol <L402|bolt11>] [--endpoint <url>]
                                        Publish service handler declaration (kind 31990)
+
+Web-of-trust scoring:
+  node src/cli.js trust <pubkey> [--depth <n>] [--graph]
+                                       Recursive trust-weighted reputation scoring
 `);
       process.exit(1);
   }
@@ -113,8 +144,30 @@ async function cmdCollect() {
 }
 
 async function cmdPublish() {
+  const args = process.argv.slice(3);
+  const autoMode = args.includes('--auto');
+  const forceMode = args.includes('--force');
+  const jsonOutput = args.includes('--json');
+  
   console.log('Collecting LND metrics...');
   const metrics = await collectLndMetrics();
+  
+  // Auto mode: check if we should publish
+  if (autoMode && !forceMode) {
+    const decision = shouldPublish(metrics, { force: false });
+    if (!decision.shouldPublish) {
+      const msg = `[auto] Skipped: ${decision.reason}`;
+      if (jsonOutput) {
+        console.log(JSON.stringify({ action: 'skipped', reason: decision.reason, timestamp: new Date().toISOString() }));
+      } else {
+        console.log(msg);
+      }
+      return null;
+    }
+    console.log(`[auto] Publishing: ${decision.reason}`);
+  }
+  
+  if (forceMode) console.log('[force] Publishing regardless of state');
   
   console.log(`Node: ${metrics.pubkey.slice(0, 16)}...`);
   console.log('Dimensions:');
@@ -138,6 +191,25 @@ async function cmdPublish() {
   for (const r of results.accepted) console.log(`    ✓ ${r}`);
   console.log(`  Rejected: ${results.rejected.length}`);
   for (const r of results.rejected) console.log(`    ✗ ${r.relay}: ${r.error}`);
+  
+  // Record successful publish for auto mode tracking
+  if (results.accepted.length > 0) {
+    recordPublish(metrics, event.id);
+    console.log('\n[state] Publish state saved for auto-mode tracking');
+  }
+  
+  if (jsonOutput) {
+    console.log(JSON.stringify({
+      action: 'published',
+      eventId: event.id,
+      accepted: results.accepted.length,
+      rejected: results.rejected.length,
+      timestamp: new Date().toISOString(),
+      dimensions: Object.fromEntries(
+        Object.entries(metrics.dimensions).map(([k, v]) => [k, { value: v.value, sampleSize: v.sampleSize }])
+      ),
+    }));
+  }
   
   return event;
 }
@@ -390,6 +462,198 @@ async function cmdHandler() {
   for (const r of results.accepted) console.log(`    ✓ ${r}`);
   console.log(`  Rejected: ${results.rejected.length}`);
   for (const r of results.rejected) console.log(`    ✗ ${r.relay}: ${r.error}`);
+}
+
+async function cmdObserve() {
+  const nodePubkey = process.argv[3];
+  if (!nodePubkey) {
+    console.error('Usage: node src/cli.js observe <node_pubkey> [--publish] [--nostr <nostr_pubkey>] [--service <type>]');
+    process.exit(1);
+  }
+
+  const args = process.argv.slice(4);
+  const doPublish = args.includes('--publish');
+  const nostrIdx = args.indexOf('--nostr');
+  const nostrPubkey = nostrIdx >= 0 ? args[nostrIdx + 1] : undefined;
+  const serviceIdx = args.indexOf('--service');
+  const serviceType = serviceIdx >= 0 ? args[serviceIdx + 1] : 'lightning-node';
+
+  console.log(`Observing node ${nodePubkey.slice(0, 16)}... via LND graph\n`);
+
+  // Create a fetch function that uses our LND REST API
+  const { execSync } = await import('child_process');
+  const lndFetch = async (endpoint) => {
+    try {
+      const result = execSync(
+        `bash /data/.openclaw/workspace/lncli.sh ${endpoint}`,
+        { encoding: 'utf8', timeout: 15000 }
+      );
+      return JSON.parse(result);
+    } catch (e) {
+      throw new Error(`LND fetch failed for ${endpoint}: ${e.message}`);
+    }
+  };
+
+  // Observe via graph
+  const session = new ObservationSession(nodePubkey, serviceType, {
+    subjectNostrPubkey: nostrPubkey,
+    observerNote: 'Observation via LND network graph query',
+  });
+
+  try {
+    const { observeNodeFromGraph: observeGraph } = await import('./observer.js');
+    const channelSnap = await observeGraph(lndFetch, nodePubkey);
+    session.recordChannelState(channelSnap);
+    console.log(`Graph data:`);
+    console.log(`  Channels: ${channelSnap.numChannels}`);
+    console.log(`  Capacity: ${channelSnap.totalCapacitySats} sats`);
+    console.log(`  Addresses: ${channelSnap.peers}`);
+  } catch (e) {
+    console.log(`⚠ Graph query failed: ${e.message}`);
+  }
+
+  // Peer-check probe: if we're directly connected, that's a strong reachability signal.
+  // If not connected, infer reachability from graph data (active channels = node is up).
+  try {
+    const peers = await lndFetch('/v1/peers');
+    const isPeer = (peers.peers || []).some(p => p.pub_key === nodePubkey);
+    if (isPeer) {
+      // Direct connection = definitely reachable
+      session.recordProbe({ reachable: true, method: 'peer-check', latencyMs: null });
+      console.log(`  Peer status: connected (direct reachability confirmed)`);
+    } else if (session.channelSnapshots.length > 0 && session.channelSnapshots[0].activeChannels > 0) {
+      // Not our peer, but graph shows active channels = node is reachable on network
+      session.recordProbe({ reachable: true, method: 'graph-inferred', latencyMs: null });
+      console.log(`  Peer status: not connected (but ${session.channelSnapshots[0].activeChannels} active channels in graph → inferred reachable)`);
+    } else {
+      // Not connected and no graph evidence of activity
+      session.recordProbe({ reachable: false, method: 'peer-check', latencyMs: null });
+      console.log(`  Peer status: not connected (no active channels found)`);
+    }
+  } catch (e) {
+    console.log(`  ⚠ Peer check failed: ${e.message}`);
+  }
+
+  // Compute dimensions
+  const dims = session.computeDimensions();
+  console.log(`\nComputed dimensions:`);
+  for (const [name, data] of Object.entries(dims)) {
+    console.log(`  ${name}: ${data.value} (n=${data.sampleSize})`);
+  }
+
+  if (!doPublish) {
+    // Dry run: build but don't publish
+    const kp = getKeypair();
+    const event = buildObserverAttestation(session, kp.secretKey, {
+      observerDescription: 'Satoshi node — automated graph observer',
+    });
+    console.log(`\nEvent (dry run — use --publish to send to relays):`);
+    console.log(`  ID: ${event.id}`);
+    console.log(`  Kind: ${event.kind}`);
+    console.log(`  Type: observer`);
+    console.log(`  Dimensions: ${event.tags.filter(t => t[0] === 'dimension').length}`);
+    return;
+  }
+
+  // Publish
+  const kp = getKeypair();
+  const event = buildObserverAttestation(session, kp.secretKey, {
+    observerDescription: 'Satoshi node — automated graph observer',
+  });
+
+  console.log(`\nEvent ID: ${event.id}`);
+  console.log(`Publishing to ${DEFAULT_RELAYS.length} relays...`);
+  const results = await publishToRelays(event);
+
+  console.log(`\nResults:`);
+  console.log(`  Accepted: ${results.accepted.length}`);
+  for (const r of results.accepted) console.log(`    ✓ ${r}`);
+  console.log(`  Rejected: ${results.rejected.length}`);
+  for (const r of results.rejected) console.log(`    ✗ ${r.relay}: ${r.error}`);
+}
+
+async function cmdTrust() {
+  const pubkey = process.argv[3];
+  if (!pubkey) {
+    console.error('Usage: node src/cli.js trust <pubkey_hex> [--depth <n>] [--graph]');
+    process.exit(1);
+  }
+
+  const args = process.argv.slice(4);
+  const depthIdx = args.indexOf('--depth');
+  const maxDepth = depthIdx >= 0 ? parseInt(args[depthIdx + 1]) : 2;
+  const useGraph = args.includes('--graph');
+
+  console.log(`Web-of-Trust scoring for ${pubkey.slice(0, 16)}...`);
+  console.log(`Max depth: ${maxDepth}, Graph data: ${useGraph ? 'yes' : 'no'}\n`);
+
+  // Build graph function if requested
+  let graphFn = null;
+  if (useGraph) {
+    const { execSync } = await import('child_process');
+    graphFn = async (nodePub) => {
+      try {
+        const result = execSync(
+          `bash /data/.openclaw/workspace/lncli.sh /v1/graph/node/${nodePub}`,
+          { encoding: 'utf8', timeout: 15000 }
+        );
+        const nodeInfo = JSON.parse(result);
+        if (!nodeInfo || !nodeInfo.node) return null;
+        return {
+          channels: nodeInfo.num_channels || 0,
+          capacity: parseInt(nodeInfo.total_capacity || '0'),
+        };
+      } catch {
+        return null;
+      }
+    };
+  }
+
+  const wot = new WebOfTrust({
+    queryFn: queryAttestations,
+    graphFn,
+    maxDepth,
+  });
+
+  const result = await wot.score(pubkey);
+
+  if (result.rawAttestations.length === 0) {
+    console.log('No attestations found for this pubkey.');
+    return;
+  }
+
+  console.log(`Found ${result.rawAttestations.length} attestation(s)\n`);
+
+  // Trust graph
+  console.log('=== Trust Graph ===');
+  for (const entry of result.trustGraph) {
+    const trustBar = '█'.repeat(Math.round(entry.trustScore * 20)).padEnd(20, '░');
+    console.log(`  ${entry.attester.slice(0, 16)}... [${entry.attestationType}]`);
+    console.log(`    Trust: ${trustBar} ${(entry.trustScore * 100).toFixed(1)}%`);
+    console.log(`    Effective weight: ${entry.effectiveWeight.toFixed(4)} (decay: ${entry.decayWeight}, type: ${entry.typeWeight}, trust: ${entry.trustScore})`);
+    if (entry.sources.length > 0) {
+      const sourceStr = entry.sources
+        .filter(s => s.contribution > 0)
+        .map(s => `${s.type}(+${s.contribution.toFixed(3)})`)
+        .join(', ');
+      if (sourceStr) console.log(`    Sources: ${sourceStr}`);
+    }
+  }
+
+  // Aggregated dimensions
+  console.log('\n=== Trust-Weighted Dimensions ===');
+  for (const [name, data] of Object.entries(result.dimensions)) {
+    console.log(`  ${name}: ${data.weightedAvg.toFixed(4)} (${data.numAttesters} attester(s), weight: ${data.totalWeight})`);
+  }
+
+  // Summary
+  console.log('\n=== Summary ===');
+  console.log(`  Confidence: ${result.confidence.toFixed(4)}`);
+  console.log(`  Sybil risk: ${result.sybilRisk}`);
+  if (result.meta.sybilFlags.length > 0) {
+    console.log(`  ⚠ Flags: ${result.meta.sybilFlags.join(', ')}`);
+  }
+  console.log(`  Queries: ${result.meta.queriesMade} (${result.meta.cacheHits} cache hits)`);
 }
 
 main().catch(err => {

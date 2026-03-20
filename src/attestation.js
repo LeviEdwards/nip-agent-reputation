@@ -23,6 +23,19 @@ const DEFAULT_RELAYS = [
 const DEFAULT_HALF_LIFE_HOURS = 720; // 30 days
 const SAMPLE_WINDOW_HOURS = 168;     // 7 days
 
+// Minimum sample sizes per dimension (below which signal is weak)
+const MIN_SAMPLE_SIZES = {
+  payment_success_rate: 5,
+  settlement_rate: 5,
+  response_time_ms: 3,
+  uptime_percent: 1,
+  dispute_rate: 5,
+  capacity_sats: 1,
+  transaction_volume_sats: 1,
+  num_channels: 1,
+  num_forwards: 1,
+};
+
 /**
  * Build a kind 30078 self-attestation event from LND metrics.
  */
@@ -131,9 +144,19 @@ export async function queryAttestations(subjectPubkey, relays = DEFAULT_RELAYS, 
         pool.querySync(relays, { ...baseFilter, authors: [subjectPubkey] }),
       ]);
       // Merge and deduplicate by event ID
+      // For byAuthor results: only include self-attestations (where author is the subject),
+      // not observer attestations the author published about OTHER nodes
       const seen = new Set();
-      for (const e of [...byP, ...byAuthor]) {
+      for (const e of byP) {
         if (!seen.has(e.id)) { seen.add(e.id); allEvents.push(e); }
+      }
+      for (const e of byAuthor) {
+        if (seen.has(e.id)) continue;
+        // Check if this is a self-attestation (attester is also the subject)
+        const aType = (e.tags || []).find(t => t[0] === 'attestation_type');
+        if (aType && aType[1] !== 'self') continue; // skip observer/bilateral authored by this key but about others
+        seen.add(e.id);
+        allEvents.push(e);
       }
     } else if (subjectPubkey.length === 66) {
       // LND node pubkey: can't filter by relay tag efficiently; fetch agent-reputation events
@@ -205,9 +228,20 @@ export function parseAttestation(event) {
 }
 
 /**
- * Apply decay-weighted aggregation across multiple attestations.
+ * Check if a dimension meets minimum sample size requirements.
+ * Returns { meets: boolean, minimum: number, actual: number }
  */
-export function aggregateAttestations(attestations) {
+export function meetsMinSampleSize(dimensionName, sampleSize) {
+  const minimum = MIN_SAMPLE_SIZES[dimensionName] || 1;
+  return { meets: sampleSize >= minimum, minimum, actual: sampleSize };
+}
+
+/**
+ * Apply decay-weighted aggregation across multiple attestations.
+ * opts.enforceSampleSize: if true, discount dimensions below minimum sample size (default: true)
+ */
+export function aggregateAttestations(attestations, opts = {}) {
+  const enforceSampleSize = opts.enforceSampleSize !== false;
   // Weight by attestation type
   const typeWeights = { bilateral: 1.0, observer: 0.7, self: 0.3, unknown: 0.1 };
   
@@ -219,10 +253,23 @@ export function aggregateAttestations(attestations) {
     
     for (const dim of att.dimensions) {
       if (!dimensionAgg[dim.name]) {
-        dimensionAgg[dim.name] = { weightedSum: 0, totalWeight: 0, count: 0 };
+        dimensionAgg[dim.name] = { weightedSum: 0, totalWeight: 0, count: 0, belowMinSample: 0 };
       }
-      dimensionAgg[dim.name].weightedSum += dim.value * totalWeight;
-      dimensionAgg[dim.name].totalWeight += totalWeight;
+      
+      // Apply sample size discount: dimensions below minimum get 50% weight reduction
+      let effectiveWeight = totalWeight;
+      if (enforceSampleSize && dim.sampleSize > 0) {
+        const { meets } = meetsMinSampleSize(dim.name, dim.sampleSize);
+        if (!meets) {
+          effectiveWeight *= 0.5;
+          dimensionAgg[dim.name].belowMinSample++;
+        }
+      }
+      // Skip dimensions with zero sample size entirely
+      if (dim.sampleSize === 0) continue;
+      
+      dimensionAgg[dim.name].weightedSum += dim.value * effectiveWeight;
+      dimensionAgg[dim.name].totalWeight += effectiveWeight;
       dimensionAgg[dim.name].count += 1;
     }
   }
@@ -233,10 +280,11 @@ export function aggregateAttestations(attestations) {
       weightedAvg: agg.totalWeight > 0 ? agg.weightedSum / agg.totalWeight : 0,
       numAttesters: agg.count,
       totalWeight: Math.round(agg.totalWeight * 1000) / 1000,
+      belowMinSample: agg.belowMinSample || 0,
     };
   }
   
   return result;
 }
 
-export { DEFAULT_RELAYS };
+export { DEFAULT_RELAYS, MIN_SAMPLE_SIZES };
