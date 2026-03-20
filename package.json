@@ -2,10 +2,13 @@
   "name": "nip-agent-reputation",
   "version": "0.1.0",
   "type": "module",
-  "description": "**Status:** DRAFT v0.1 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2) **Created:** 2026-03-19 **Last Updated:** 2026-03-19",
-  "main": "index.js",
+  "description": "Nostr protocol for agent reputation attestations on Lightning Network — reference implementation",
+  "main": "src/attestation.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node src/test-decay.js && node src/test-bilateral.js && node src/test-auto-publish.js && node src/test-integration.js && node src/test-observer.js && node src/test-web-of-trust.js",
+    "collect": "node src/cli.js collect",
+    "publish": "node src/cli.js publish",
+    "publish:auto": "node src/cli.js publish --auto"
   },
   "repository": {
     "type": "git",
