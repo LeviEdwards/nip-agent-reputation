@@ -1,9 +1,9 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v0.5.2 — NIP-XX formatted for submission
+**Status:** DRAFT v0.6 — Kind 30388 live on relays, npm package ready
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-20
+**Last Updated:** 2026-03-21
 
 ---
 
@@ -367,14 +367,33 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] README for the reference implementation (setup, usage examples, API docs)
 - [x] Consider: should observer attestations require proof of observation method? → **No** (see v0.5.2 notes)
 - [x] Consider: NIP-89 kind 31989 (recommendations) for agent endorsements → **Deferred** (see v0.5.2 notes)
-- [ ] Package as npm module for other agents to integrate
-- [ ] Migrate code from kind 30078 to kind 30388 (proposed in NIP-XX)
+- [x] Package as npm module for other agents to integrate → **Ready** (see v0.6 notes)
+- [x] Migrate code from kind 30078 to kind 30388 (proposed in NIP-XX) → **Done** (code already used constants; live re-publish confirmed)
 
-### TODO — v0.6 (Next)
-- [ ] Migrate reference implementation from kind 30078 → kind 30388 (make configurable, default to 30388)
-- [ ] Update handler declarations to reference kind 30388 in `k` tag
-- [ ] Re-publish self-attestation with new kind to relays, verify acceptance
-- [ ] Package as npm module (`npm publish`) for other agents to integrate
+### v0.6 (2026-03-20) — Kind 30388 Migration + npm Package Ready
+- [x] **Verified code already uses kind 30388** — `ATTESTATION_KIND = 30388` in constants.js, imported by all modules. `queryAttestations()` queries both 30388 and legacy 30078 for backwards compatibility
+- [x] **Published kind 30388 self-attestation** to all 4 relays (damus, nos.lol, primal, snort.social) — all accepted
+- [x] **Event ID:** `68f22930fb7b10dd1acde480d8427d4c54933adb4e9b17ac05d5422084648c2f` (kind 30388)
+- [x] **Published kind 31990 handler declaration** referencing kind 30388 in `k` tag — all 4 relays accepted
+- [x] **Handler event ID:** `ee07e6ab08aa31b16b367cfde6847ad7b918ccaf93aef8cbf2e0a1f55314f3f9`
+- [x] **Query verified**: backwards-compatible query returns both old kind 30078 and new kind 30388 events, properly aggregated
+- [x] **npm package ready**: `npm pack --dry-run` shows 15 files, 34.6kB. No secrets in tarball (verified: no macaroons, nsec, passwords). Package name `nip-agent-reputation` available on npm
+- [x] **Awaiting Levi's npm token** to publish — package is structurally complete (package.json, index.js exports, .npmignore, files whitelist, LICENSE, README)
+- [x] All 285 tests pass (37 auto-publish + 44 bilateral + decay + 64 integration + 86 observer + 54 web-of-trust)
+
+### TODO — v0.6
+- [x] Migrate reference implementation from kind 30078 → kind 30388 (make configurable, default to 30388)
+- [x] Update handler declarations to reference kind 30388 in `k` tag
+- [x] Re-publish self-attestation with new kind to relays, verify acceptance
+- [ ] Package as npm module (`npm publish`) — **ready, needs npm auth token from Levi**
 - [ ] Live bilateral attestation from a real counterparty
 - [ ] Community feedback: share NIP-XX draft for review (Nostr, Lightning dev channels)
 - [ ] Consider: should we register a NIP number or wait for PR review to assign one?
+
+### TODO — v0.7 (Next)
+- [ ] Publish to npm (once Levi provides auth token)
+- [ ] Live bilateral attestation from a real counterparty (not self-generated)
+- [ ] Submit NIP-XX as PR to nostr/nips repo
+- [ ] Community feedback: share in Nostr dev channels, Lightning dev Telegram/Discord
+- [ ] Consider: example integration guide (how another agent would use the library)
+- [ ] Consider: web dashboard for viewing reputation data (query + render attestations)

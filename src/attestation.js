@@ -1,14 +1,18 @@
 /**
  * Attestation builder and publisher for NIP Agent Reputation.
  * 
- * Builds kind 30078 events from collected metrics and publishes
+ * Builds kind 30388 events from collected metrics and publishes
  * them to Nostr relays.
+ * 
+ * Kind 30388 is the proposed dedicated kind per NIP-XX.
+ * Legacy kind 30078 is queried for backwards compatibility.
  */
 
 import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
 import { SimplePool } from 'nostr-tools/pool';
 import { useWebSocketImplementation } from 'nostr-tools/pool';
 import WebSocket from 'ws';
+import { ATTESTATION_KIND, LEGACY_ATTESTATION_KIND } from './constants.js';
 
 // Polyfill WebSocket for Node.js
 useWebSocketImplementation(WebSocket);
@@ -37,7 +41,7 @@ const MIN_SAMPLE_SIZES = {
 };
 
 /**
- * Build a kind 30078 self-attestation event from LND metrics.
+ * Build a kind 30388 self-attestation event from LND metrics.
  */
 export function buildSelfAttestation(metrics, secretKey, opts = {}) {
   const serviceType = opts.serviceType || 'lightning-node';
@@ -73,11 +77,11 @@ export function buildSelfAttestation(metrics, secretKey, opts = {}) {
   tags.push(['l', 'attestation', 'agent-reputation']);
   
   const eventTemplate = {
-    kind: 30078,
+    kind: ATTESTATION_KIND,
     created_at: Math.floor(Date.now() / 1000),
     tags,
     content: JSON.stringify({
-      version: '0.1',
+      version: '0.3',
       node_alias: metrics.alias,
       block_height: metrics.blockHeight,
       synced: metrics.syncedToChain && metrics.syncedToGraph,
@@ -129,7 +133,8 @@ export async function queryAttestations(subjectPubkey, relays = DEFAULT_RELAYS, 
   const pool = new SimplePool();
   const serviceType = opts.serviceType || null;
   
-  const baseFilter = { kinds: [30078] };
+  // Query both new kind (30388) and legacy kind (30078) for backwards compatibility
+  const baseFilter = { kinds: [ATTESTATION_KIND, LEGACY_ATTESTATION_KIND] };
   if (opts.since) baseFilter.since = opts.since;
   if (opts.limit) baseFilter.limit = opts.limit;
   
@@ -184,7 +189,7 @@ export async function queryAttestations(subjectPubkey, relays = DEFAULT_RELAYS, 
 }
 
 /**
- * Parse a kind 30078 event into a structured attestation object.
+ * Parse a kind 30388 (or legacy 30078) event into a structured attestation object.
  */
 export function parseAttestation(event) {
   const tags = event.tags || [];

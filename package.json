@@ -1,26 +1,70 @@
 {
   "name": "nip-agent-reputation",
-  "version": "0.1.0",
+  "version": "0.6.0",
   "type": "module",
-  "description": "Nostr protocol for agent reputation attestations on Lightning Network — reference implementation",
-  "main": "src/attestation.js",
+  "description": "Nostr protocol for agent reputation attestations on Lightning Network — reference implementation of NIP-XX",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./attestation": "./src/attestation.js",
+    "./bilateral": "./src/bilateral.js",
+    "./observer": "./src/observer.js",
+    "./handler": "./src/handler.js",
+    "./auto-publish": "./src/auto-publish.js",
+    "./web-of-trust": "./src/web-of-trust.js",
+    "./constants": "./src/constants.js",
+    "./keys": "./src/keys.js",
+    "./lnd": "./src/lnd.js"
+  },
+  "bin": {
+    "nip-reputation": "./src/cli.js"
+  },
   "scripts": {
     "test": "node src/test-decay.js && node src/test-bilateral.js && node src/test-auto-publish.js && node src/test-integration.js && node src/test-observer.js && node src/test-web-of-trust.js",
     "collect": "node src/cli.js collect",
     "publish": "node src/cli.js publish",
     "publish:auto": "node src/cli.js publish --auto"
   },
+  "keywords": [
+    "nostr",
+    "nip",
+    "lightning",
+    "reputation",
+    "attestation",
+    "bitcoin",
+    "lnd",
+    "agent",
+    "web-of-trust",
+    "l402"
+  ],
+  "author": "Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://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@github.com/LeviEdwards/nip-agent-reputation.git"
+    "url": "git+https://github.com/LeviEdwards/nip-agent-reputation.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/LeviEdwards/nip-agent-reputation/issues"
   },
   "homepage": "https://github.com/LeviEdwards/nip-agent-reputation#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "index.js",
+    "src/attestation.js",
+    "src/bilateral.js",
+    "src/observer.js",
+    "src/handler.js",
+    "src/auto-publish.js",
+    "src/web-of-trust.js",
+    "src/constants.js",
+    "src/keys.js",
+    "src/lnd.js",
+    "src/cli.js",
+    "NIP-XX.md",
+    "README.md"
+  ],
   "dependencies": {
     "@noble/hashes": "^2.0.1",
     "nostr-tools": "^2.23.3",

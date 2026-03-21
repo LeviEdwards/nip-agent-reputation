@@ -11,6 +11,7 @@
  */
 
 import { parseAttestation, aggregateAttestations } from './attestation.js';
+import { ATTESTATION_KIND, LEGACY_ATTESTATION_KIND } from './constants.js';
 
 const NOW = Math.floor(Date.now() / 1000);
 const HOUR = 3600;
@@ -20,7 +21,7 @@ function makeEvent(overrides = {}) {
     id: overrides.id || 'deadbeef'.repeat(8),
     pubkey: overrides.pubkey || 'aa'.repeat(32),
     created_at: overrides.created_at || NOW,
-    kind: 30078,
+    kind: overrides.kind || ATTESTATION_KIND,
     tags: [
       ['d', 'test:lightning-node'],
       ['service_type', 'lightning-node'],

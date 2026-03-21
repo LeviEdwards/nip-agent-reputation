@@ -25,6 +25,7 @@
  */
 
 import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
+import { ATTESTATION_KIND } from './constants.js';
 
 const DEFAULT_HALF_LIFE_HOURS = 720;
 
@@ -196,7 +197,7 @@ export class ObservationSession {
 }
 
 /**
- * Build an observer attestation event (kind 30078).
+ * Build an observer attestation event (kind 30388).
  * 
  * @param {ObservationSession} session - Accumulated observation data
  * @param {Uint8Array} secretKey - Observer's Nostr secret key
@@ -243,11 +244,11 @@ export function buildObserverAttestation(session, secretKey, opts = {}) {
   tags.push(['l', 'attestation', 'agent-reputation']);
 
   const eventTemplate = {
-    kind: 30078,
+    kind: ATTESTATION_KIND,
     created_at: Math.floor(Date.now() / 1000),
     tags,
     content: JSON.stringify({
-      version: '0.2',
+      version: '0.3',
       attestation_type: 'observer',
       observation_window_hours: windowHours,
       num_probes: session.probes.length,

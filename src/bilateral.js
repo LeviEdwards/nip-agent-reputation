@@ -2,7 +2,7 @@
  * Bilateral attestation builder for NIP Agent Reputation.
  * 
  * After a transaction between two agents, each party publishes
- * a kind 30078 attestation of the other's behavior.
+ * a kind 30388 attestation of the other's behavior.
  * 
  * Usage:
  *   import { buildBilateralAttestation, TransactionRecord } from './bilateral.js';
@@ -21,6 +21,7 @@
  */
 
 import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
+import { ATTESTATION_KIND } from './constants.js';
 
 const DEFAULT_HALF_LIFE_HOURS = 720; // 30 days
 
@@ -142,7 +143,7 @@ export class TransactionHistory {
 }
 
 /**
- * Build a bilateral attestation event (kind 30078).
+ * Build a bilateral attestation event (kind 30388).
  * 
  * This is published by the attester after transacting with the subject.
  * The attestation type is 'bilateral', carrying higher trust weight
@@ -200,11 +201,11 @@ export function buildBilateralAttestation(opts, secretKey) {
   tags.push(['l', 'attestation', 'agent-reputation']);
 
   const eventTemplate = {
-    kind: 30078,
+    kind: ATTESTATION_KIND,
     created_at: Math.floor(Date.now() / 1000),
     tags,
     content: JSON.stringify({
-      version: '0.2',
+      version: '0.3',
       attestation_type: 'bilateral',
       note: 'Published after direct transaction(s) with the subject agent.',
     }),

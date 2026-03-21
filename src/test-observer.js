@@ -13,6 +13,7 @@ import {
 } from './observer.js';
 import { parseAttestation, aggregateAttestations } from './attestation.js';
 import { buildSelfAttestation } from './attestation.js';
+import { ATTESTATION_KIND } from './constants.js';
 import { buildBilateralAttestation } from './bilateral.js';
 
 let passed = 0;
@@ -149,7 +150,7 @@ const event = buildObserverAttestation(session, kp.secretKey, {
   observerDescription: 'Automated Lightning network monitor',
 });
 
-assert(event.kind === 30078, 'Kind 30078');
+assert(event.kind === ATTESTATION_KIND, `Kind ${ATTESTATION_KIND}`);
 assert(event.id.length === 64, 'Has valid event ID');
 assert(event.sig.length === 128, 'Has valid signature');
 
@@ -260,7 +261,7 @@ assert(restoredDims.capacity_sats.value === dims.capacity_sats.value, 'Restored 
 
 // Build event from restored session
 const restoredEvent = buildObserverAttestation(restored, kp.secretKey);
-assert(restoredEvent.kind === 30078, 'Restored event valid');
+assert(restoredEvent.kind === ATTESTATION_KIND, 'Restored event valid');
 const restoredParsed = parseAttestation(restoredEvent);
 assert(restoredParsed.attestationType === 'observer', 'Restored event type = observer');
 
@@ -276,7 +277,7 @@ assert(allFailDims.response_time_ms === undefined, 'No response time when all fa
 
 // Can still build attestation (0% uptime is valid data)
 const allFailEvent = buildObserverAttestation(allFailSession, kp.secretKey);
-assert(allFailEvent.kind === 30078, '0% uptime attestation is valid');
+assert(allFailEvent.kind === ATTESTATION_KIND, '0% uptime attestation is valid');
 
 // ===== Phase 10: Channel availability with inactive snapshots =====
 console.log('\n=== Phase 10: Channel Availability Edge Cases ===');

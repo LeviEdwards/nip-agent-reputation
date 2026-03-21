@@ -1,0 +1,19 @@
+# Secrets — NEVER publish
+.nostr-nsec
+.tx-history.json
+.auto-publish-state.json
+.ssh/
+
+# Test files
+src/test-*.js
+
+# Dev files
+node_modules/
+package-lock.json
+*.log
+.git/
+.gitignore
+
+# Working drafts (spec is in NIP-XX.md)
+nip-agent-reputation.md
+NIP.md

@@ -6,8 +6,8 @@
  * Tests the complete cycle:
  *   1. Declare service handler (kind 31990)
  *   2. Record transactions
- *   3. Build bilateral attestation (kind 30078)
- *   4. Build self-attestation (kind 30078)
+ *   3. Build bilateral attestation (kind 30388)
+ *   4. Build self-attestation (kind 30388)
  *   5. Parse all events back
  *   6. Aggregate attestations with decay weighting
  *   7. Validate edge cases (self-only, stale services)
@@ -32,6 +32,7 @@ import {
   buildServiceHandler,
   parseServiceHandler,
 } from './handler.js';
+import { ATTESTATION_KIND } from './constants.js';
 
 let passed = 0;
 let failed = 0;
@@ -172,7 +173,7 @@ const bilateralEvent = buildBilateralFromHistory(history, agentA_lnd, agentB_sk,
   serviceType: 'btc-network-api',
 });
 
-assert(bilateralEvent.kind === 30078, 'Bilateral event is kind 30078');
+assert(bilateralEvent.kind === ATTESTATION_KIND, `Bilateral event is kind ${ATTESTATION_KIND}`);
 assert(verifyEvent(bilateralEvent), 'Bilateral event signature is valid');
 assert(bilateralEvent.pubkey === agentB_pk, 'Bilateral attester is Agent B');
 
@@ -212,7 +213,7 @@ const mockMetrics = {
 
 const selfEvent = buildSelfAttestation(mockMetrics, agentA_sk, { nostrPubkey: agentA_pk });
 
-assert(selfEvent.kind === 30078, 'Self event is kind 30078');
+assert(selfEvent.kind === ATTESTATION_KIND, `Self event is kind ${ATTESTATION_KIND}`);
 assert(verifyEvent(selfEvent), 'Self event signature is valid');
 assert(selfEvent.pubkey === agentA_pk, 'Self attester is Agent A');
 

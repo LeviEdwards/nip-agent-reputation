@@ -15,6 +15,7 @@ import {
   buildBilateralFromHistory,
 } from './bilateral.js';
 import { parseAttestation, aggregateAttestations } from './attestation.js';
+import { ATTESTATION_KIND } from './constants.js';
 
 let passed = 0;
 let failed = 0;
@@ -167,7 +168,7 @@ console.log('\n=== Build Bilateral Event ===');
     sampleWindowHours: 72,
   }, sk);
 
-  assert(event.kind === 30078, 'kind 30078');
+  assert(event.kind === ATTESTATION_KIND, `kind ${ATTESTATION_KIND}`);
   assert(event.pubkey === pk, 'signed by attester');
   assert(verifyEvent(event), 'signature valid');
 
@@ -207,7 +208,7 @@ console.log('\n=== Build From History ===');
   }
 
   const event = buildBilateralFromHistory(history, nodePub, sk);
-  assert(event.kind === 30078, 'builds valid event from history');
+  assert(event.kind === ATTESTATION_KIND, 'builds valid event from history');
   assert(verifyEvent(event), 'signature valid');
 
   const dimTags = event.tags.filter(t => t[0] === 'dimension');

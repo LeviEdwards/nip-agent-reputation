@@ -39,6 +39,7 @@ import {
   buildServiceHandler,
   parseServiceHandler,
 } from './handler.js';
+import { ATTESTATION_KIND } from './constants.js';
 import {
   ObservationSession,
   buildObserverAttestation,
@@ -82,7 +83,7 @@ async function main() {
     case 'trust':
       return cmdTrust();
     default:
-      console.log(`NIP Agent Reputation — Reference Implementation v0.4
+      console.log(`NIP Agent Reputation — Reference Implementation v0.6
 
 Usage:
   node src/cli.js collect              Gather LND metrics (dry run)
@@ -445,6 +446,7 @@ async function cmdHandler() {
     protocol,
     endpoint,
     nodePubkey,
+    handlerKinds: [ATTESTATION_KIND],
   }, kp.secretKey);
   
   console.log(`Event ID: ${event.id}`);
