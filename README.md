@@ -1,6 +1,6 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v0.6 — Kind 30388 live on relays, npm package ready
+**Status:** DRAFT v0.7.1 — Kind 30388 live on relays, npm package ready, repo public, dashboard hosted
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
 **Last Updated:** 2026-03-21
@@ -390,10 +390,31 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [ ] Community feedback: share NIP-XX draft for review (Nostr, Lightning dev channels)
 - [ ] Consider: should we register a NIP number or wait for PR review to assign one?
 
-### TODO — v0.7 (Next)
+### v0.7 (2026-03-21) — Web Dashboard
+- [x] **Built web dashboard** (`dashboard/index.html`) — single-file, zero-dependency browser app
+  - Live WebSocket queries to 4 Nostr relays (damus, nos.lol, primal, snort.social)
+  - Accepts npub, 64-hex Nostr pubkey, or 66-hex LND node pubkey
+  - Aggregated dimension cards with color-coded values (green/yellow/red)
+  - Trust level meter (verified / moderate / low) based on attestation diversity
+  - Individual attestation cards showing type, age, dimensions, effective weight
+  - Quick-link buttons for Satoshi, ACINQ, and Levi's LND node
+  - Dark theme, responsive grid layout
+- [x] Verified dashboard works with live relay data: 3 attestations for Satoshi node, 2 observer attestations for ACINQ
+- [x] All 285 tests still pass
+
+### v0.7.1 (2026-03-21) — Public Repo + GitHub Pages Dashboard
+- [x] **Made repo public** — NIP spec is meant for community review, no reason to keep private
+- [x] **Set up GitHub Pages deployment** — GitHub Actions workflow (`.github/workflows/pages.yml`) auto-deploys `docs/` on push
+- [x] **Created docs/ directory** with enhanced dashboard: added OG meta tags for social sharing, "About NIP-XX" section with 4 feature cards, links to spec/code/examples, install placeholder
+- [x] **Privacy fix**: renamed "Levi's LND" quick link to "Operator's LND Node" on public dashboard
+- [x] **Dashboard URL** (pending Pages activation): `https://leviedwards.github.io/nip-agent-reputation/`
+- [x] ⚠️ **Pages needs manual activation**: Levi needs to go to repo Settings → Pages → Source: "GitHub Actions" (the API token doesn't have Pages scope). One-time setup, then auto-deploys on every push to docs/
+- [x] All 285 tests still pass
+
+### TODO — v0.7
 - [ ] Publish to npm (once Levi provides auth token)
 - [ ] Live bilateral attestation from a real counterparty (not self-generated)
 - [ ] Submit NIP-XX as PR to nostr/nips repo
 - [ ] Community feedback: share in Nostr dev channels, Lightning dev Telegram/Discord
-- [ ] Consider: example integration guide (how another agent would use the library)
-- [ ] Consider: web dashboard for viewing reputation data (query + render attestations)
+- [ ] Consider: example integration guide (how another agent would use the library) — 7 examples already exist in examples/
+- [x] Host dashboard publicly (GitHub Pages) — **done, pending Levi enabling Pages in repo settings**
