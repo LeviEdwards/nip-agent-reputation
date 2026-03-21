@@ -51,6 +51,10 @@ import {
   recordPublish,
   loadState,
 } from './auto-publish.js';
+import {
+  discoverServices,
+  formatDiscoveryResults,
+} from './discover.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -82,6 +86,8 @@ async function main() {
       return cmdObserve();
     case 'trust':
       return cmdTrust();
+    case 'discover':
+      return cmdDiscover();
     default:
       console.log(`NIP Agent Reputation — Reference Implementation v0.6
 
@@ -112,6 +118,14 @@ Service handlers:
 Web-of-trust scoring:
   node src/cli.js trust <pubkey> [--depth <n>] [--graph]
                                        Recursive trust-weighted reputation scoring
+
+Service discovery:
+  node src/cli.js discover             Find all agent services on relays
+  node src/cli.js discover --type <service_type>  Filter by service type
+  node src/cli.js discover --protocol <L402|bolt11>  Filter by protocol
+  node src/cli.js discover --reputation           Enrich with reputation data
+  node src/cli.js discover --max-age <days>       Only show services declared within N days
+  node src/cli.js discover --json                 Output as JSON
 `);
       process.exit(1);
   }
@@ -656,6 +670,54 @@ async function cmdTrust() {
     console.log(`  ⚠ Flags: ${result.meta.sybilFlags.join(', ')}`);
   }
   console.log(`  Queries: ${result.meta.queriesMade} (${result.meta.cacheHits} cache hits)`);
+}
+
+/**
+ * Discover agent services from relays.
+ */
+async function cmdDiscover() {
+  const { SimplePool } = await import('nostr-tools/pool');
+  const pool = new SimplePool();
+
+  const args = process.argv.slice(3);
+  const getFlag = (name) => {
+    const idx = args.indexOf(name);
+    return idx >= 0 ? args[idx + 1] : null;
+  };
+  const hasFlag = (name) => args.includes(name);
+
+  const opts = {
+    serviceType: getFlag('--type'),
+    protocol: getFlag('--protocol'),
+    maxAgeDays: getFlag('--max-age') ? parseFloat(getFlag('--max-age')) : undefined,
+    withReputation: hasFlag('--reputation') || hasFlag('-r'),
+  };
+
+  console.log('Discovering agent services on Nostr relays...');
+  if (opts.serviceType) console.log(`  Filtering by type: ${opts.serviceType}`);
+  if (opts.protocol) console.log(`  Filtering by protocol: ${opts.protocol}`);
+  if (opts.maxAgeDays) console.log(`  Max age: ${opts.maxAgeDays} days`);
+  if (opts.withReputation) console.log(`  Enriching with reputation data...`);
+  console.log('');
+
+  try {
+    const services = await discoverServices(pool, DEFAULT_RELAYS, opts);
+
+    if (hasFlag('--json')) {
+      // Strip raw events for clean JSON
+      const clean = services.map(({ raw, ...rest }) => rest);
+      console.log(JSON.stringify(clean, null, 2));
+    } else {
+      console.log(formatDiscoveryResults(services));
+    }
+
+    console.log(`Queried ${DEFAULT_RELAYS.length} relays.`);
+  } catch (err) {
+    console.error('Discovery failed:', err.message);
+    process.exit(1);
+  } finally {
+    pool.close(DEFAULT_RELAYS);
+  }
 }
 
 main().catch(err => {

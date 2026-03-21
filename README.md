@@ -1,6 +1,6 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v0.7.1 — Kind 30388 live on relays, npm package ready, repo public, dashboard hosted
+**Status:** DRAFT v0.8 — Kind 30388 live on relays, npm package ready, repo public, dashboard hosted, service discovery complete
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
 **Last Updated:** 2026-03-21
@@ -409,12 +409,29 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Privacy fix**: renamed "Levi's LND" quick link to "Operator's LND Node" on public dashboard
 - [x] **Dashboard URL** (pending Pages activation): `https://leviedwards.github.io/nip-agent-reputation/`
 - [x] ⚠️ **Pages needs manual activation**: Levi needs to go to repo Settings → Pages → Source: "GitHub Actions" (the API token doesn't have Pages scope). One-time setup, then auto-deploys on every push to docs/
+- [ ] ⚠️ **GitHub PAT expired** — commit `d5cfba9` saved locally but push failed. Levi needs to provide a new PAT with `contents:write` scope
 - [x] All 285 tests still pass
 
-### TODO — v0.7
+### v0.8 (2026-03-21) — Service Discovery + 328 Tests
+- [x] **Built `src/discover.js`** — service discovery module: `discoverServices()`, `formatDiscoveryResults()`
+  - Queries kind 31990 handler declarations with `agent-reputation` label across relays
+  - Filters by service type (substring match on ID + description), protocol, max age
+  - Deduplicates: same pubkey+serviceId keeps newest
+  - Optional reputation enrichment: cross-references attestation data for trust levels
+  - Min trust weight filter for quality gating
+  - JSON output mode for programmatic use
+- [x] **CLI command: `discover`** — with `--type`, `--protocol`, `--max-age`, `--reputation`, `--json` flags
+- [x] **43 unit tests** (`src/test-discover.js`): basic discovery, filters (type/protocol/age), dedup, reputation enrichment, self-only detection, combined filters, min trust weight, format output
+- [x] **Live test confirmed**: discovers our handler declaration on 4 relays, reputation enrichment shows 3 attestations with moderate trust
+- [x] **Exports added**: `discoverServices` and `formatDiscoveryResults` in index.js and package.json
+- [x] **Total: 328 tests pass** (44 bilateral + 37 auto-publish + decay + 64 integration + 86 observer + 54 web-of-trust + 43 discover)
+- [ ] ⚠️ **GitHub PAT still expired** — 2 commits saved locally, push blocked. Levi needs to provide new PAT with `contents:write` scope
+
+### TODO — v0.8
 - [ ] Publish to npm (once Levi provides auth token)
 - [ ] Live bilateral attestation from a real counterparty (not self-generated)
 - [ ] Submit NIP-XX as PR to nostr/nips repo
 - [ ] Community feedback: share in Nostr dev channels, Lightning dev Telegram/Discord
-- [ ] Consider: example integration guide (how another agent would use the library) — 7 examples already exist in examples/
+- [ ] **Git push** — 2 local commits waiting (v0.7.1 + v0.8). Needs new GitHub PAT from Levi
 - [x] Host dashboard publicly (GitHub Pages) — **done, pending Levi enabling Pages in repo settings**
+- [x] Service discovery module (discover.js) — **complete with 43 tests**

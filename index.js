@@ -62,6 +62,12 @@ export {
   WebOfTrust,
 } from './src/web-of-trust.js';
 
+// Service discovery
+export {
+  discoverServices,
+  formatDiscoveryResults,
+} from './src/discover.js';
+
 // Key management
 export {
   getKeypair,
