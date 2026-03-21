@@ -1,9 +1,9 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v0.5
+**Status:** DRAFT v0.6 — Kind 30388 live on relays, npm package ready
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-20
+**Last Updated:** 2026-03-21
 
 ---
 
@@ -346,12 +346,66 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Updated package.json**: proper description, `npm test` runs all 241 tests, added `collect`, `publish`, `publish:auto` scripts
 - [x] All 241 tests still pass
 
+### v0.5.2 (2026-03-20) — Formal NIP Document for Submission
+- [x] **Wrote NIP-XX.md** — full formal NIP document following nostr/nips format conventions
+  - Proper heading format (`NIP-XX` + `======` underline, subtitle + `------`)
+  - Status tags: `` `draft` `optional` ``
+  - Proposed dedicated kind `30388` (graduating from kind 30078 application-specific data)
+  - NIP-85 relationship section: complementary, not competing (our attestations are from direct economic interactions; NIP-85 is offloaded WoT calculations)
+  - NIP-89 integration documented (kind 31990 handler declarations, `k` tag references 30388)
+  - Referenced NIPs: 01, 32, 57, 78, 85, 89, 90
+  - All RFC-style language (MUST/SHOULD/MAY) consistent throughout
+  - Clean aggregation formula documented with weighted average
+- [x] **Decided: observer proof of observation method** → NOT REQUIRED in spec. Rationale: observer attestations already carry lower weight (0.7 vs 1.0 bilateral). Requiring proof adds protocol complexity without proportional benefit. Web-of-trust scoring (recursive attester reputation) provides sufficient mitigation. Added to Security Considerations as "Observer Gaming" attack vector with mitigations.
+- [x] **Decided: NIP-89 kind 31989 (recommendations) for agent endorsements** → DEFERRED. Kind 31989 is for client-level app recommendations, not agent-to-agent endorsements. Our bilateral attestations already serve the endorsement function with richer data. Could revisit if there's demand for lightweight "I vouch for this agent" without dimension data.
+
 ### TODO — v0.5
-- [ ] Format spec for nostr/nips submission (follow existing NIP format conventions)
+- [x] Format spec for nostr/nips submission (follow existing NIP format conventions) → NIP-XX.md written
 - [x] Add `observer` type weight (0.7) to spec's Security Considerations (currently only mentions self=lowest)
 - [ ] Live bilateral attestation from a real counterparty (not self-generated test)
 - [x] Set up cron job for periodic self-attestation (daily or every 6 hours)
 - [x] README for the reference implementation (setup, usage examples, API docs)
-- [ ] Consider: should observer attestations require proof of observation method?
-- [ ] Consider: NIP-89 kind 31989 (recommendations) for agent endorsements
-- [ ] Package as npm module for other agents to integrate
+- [x] Consider: should observer attestations require proof of observation method? → **No** (see v0.5.2 notes)
+- [x] Consider: NIP-89 kind 31989 (recommendations) for agent endorsements → **Deferred** (see v0.5.2 notes)
+- [x] Package as npm module for other agents to integrate → **Ready** (see v0.6 notes)
+- [x] Migrate code from kind 30078 to kind 30388 (proposed in NIP-XX) → **Done** (code already used constants; live re-publish confirmed)
+
+### v0.6 (2026-03-20) — Kind 30388 Migration + npm Package Ready
+- [x] **Verified code already uses kind 30388** — `ATTESTATION_KIND = 30388` in constants.js, imported by all modules. `queryAttestations()` queries both 30388 and legacy 30078 for backwards compatibility
+- [x] **Published kind 30388 self-attestation** to all 4 relays (damus, nos.lol, primal, snort.social) — all accepted
+- [x] **Event ID:** `68f22930fb7b10dd1acde480d8427d4c54933adb4e9b17ac05d5422084648c2f` (kind 30388)
+- [x] **Published kind 31990 handler declaration** referencing kind 30388 in `k` tag — all 4 relays accepted
+- [x] **Handler event ID:** `ee07e6ab08aa31b16b367cfde6847ad7b918ccaf93aef8cbf2e0a1f55314f3f9`
+- [x] **Query verified**: backwards-compatible query returns both old kind 30078 and new kind 30388 events, properly aggregated
+- [x] **npm package ready**: `npm pack --dry-run` shows 15 files, 34.6kB. No secrets in tarball (verified: no macaroons, nsec, passwords). Package name `nip-agent-reputation` available on npm
+- [x] **Awaiting Levi's npm token** to publish — package is structurally complete (package.json, index.js exports, .npmignore, files whitelist, LICENSE, README)
+- [x] All 285 tests pass (37 auto-publish + 44 bilateral + decay + 64 integration + 86 observer + 54 web-of-trust)
+
+### TODO — v0.6
+- [x] Migrate reference implementation from kind 30078 → kind 30388 (make configurable, default to 30388)
+- [x] Update handler declarations to reference kind 30388 in `k` tag
+- [x] Re-publish self-attestation with new kind to relays, verify acceptance
+- [ ] Package as npm module (`npm publish`) — **ready, needs npm auth token from Levi**
+- [ ] Live bilateral attestation from a real counterparty
+- [ ] Community feedback: share NIP-XX draft for review (Nostr, Lightning dev channels)
+- [ ] Consider: should we register a NIP number or wait for PR review to assign one?
+
+### v0.7 (2026-03-21) — Web Dashboard
+- [x] **Built web dashboard** (`dashboard/index.html`) — single-file, zero-dependency browser app
+  - Live WebSocket queries to 4 Nostr relays (damus, nos.lol, primal, snort.social)
+  - Accepts npub, 64-hex Nostr pubkey, or 66-hex LND node pubkey
+  - Aggregated dimension cards with color-coded values (green/yellow/red)
+  - Trust level meter (verified / moderate / low) based on attestation diversity
+  - Individual attestation cards showing type, age, dimensions, effective weight
+  - Quick-link buttons for Satoshi, ACINQ, and Levi's LND node
+  - Dark theme, responsive grid layout
+- [x] Verified dashboard works with live relay data: 3 attestations for Satoshi node, 2 observer attestations for ACINQ
+- [x] All 285 tests still pass
+
+### TODO — v0.7
+- [ ] Publish to npm (once Levi provides auth token)
+- [ ] Live bilateral attestation from a real counterparty (not self-generated)
+- [ ] Submit NIP-XX as PR to nostr/nips repo
+- [ ] Community feedback: share in Nostr dev channels, Lightning dev Telegram/Discord
+- [ ] Consider: example integration guide (how another agent would use the library) — 7 examples already exist in examples/
+- [ ] Host dashboard publicly (GitHub Pages or dispatches.mystere.me)

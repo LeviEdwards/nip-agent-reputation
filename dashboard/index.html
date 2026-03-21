@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Reputation Dashboard — NIP-XX</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #f7931a;
+      --accent-dim: #f7931a33;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --blue: #58a6ff;
+      --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    header {
+      max-width: 900px;
+      margin: 0 auto 32px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    header h1 span { color: var(--accent); }
+    header p { color: var(--text-muted); font-size: 14px; }
+    .search-box {
+      max-width: 900px;
+      margin: 0 auto 32px;
+      display: flex;
+      gap: 12px;
+    }
+    .search-box input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      outline: none;
+    }
+    .search-box input:focus { border-color: var(--accent); }
+    .search-box input::placeholder { color: var(--text-muted); }
+    .search-box button {
+      padding: 12px 24px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .search-box button:hover { opacity: 0.9; }
+    .search-box button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status-bar {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      display: none;
+    }
+    .status-bar.visible { display: block; }
+    .status-bar.error { border-color: var(--red); color: var(--red); }
+    .status-bar.success { border-color: var(--green); }
+
+    .results {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Summary card */
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .summary-card h2 {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    .summary-card .meta {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+    .summary-card .meta code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .dimensions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .dim-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .dim-card .dim-name {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .dim-card .dim-value {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .dim-card .dim-detail {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .dim-value.high { color: var(--green); }
+    .dim-value.medium { color: var(--yellow); }
+    .dim-value.low { color: var(--red); }
+    .dim-value.neutral { color: var(--blue); }
+
+    /* Trust bar */
+    .trust-bar {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .trust-bar h3 {
+      font-size: 13px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .trust-meter {
+      height: 8px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .trust-meter .fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .trust-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Attestation list */
+    .attestation-list {
+      margin-top: 24px;
+    }
+    .attestation-list h3 {
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+    .attestation-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .attestation-item .att-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .att-type {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .att-type.bilateral { background: var(--green); color: #000; }
+    .att-type.observer { background: var(--blue); color: #000; }
+    .att-type.self { background: var(--text-muted); color: #000; }
+    .att-age {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .att-dims {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .att-dim-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .att-dim-tag .dim-label { color: var(--text-muted); }
+    .att-attester {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .att-weight {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .att-weight strong { color: var(--accent); }
+
+    /* Loading */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Quick links */
+    .quick-links {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .quick-links button {
+      padding: 6px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .quick-links button:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .footer {
+      max-width: 900px;
+      margin: 48px auto 0;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding-bottom: 32px;
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚡ Agent <span>Reputation</span> Dashboard</h1>
+    <p>Query NIP-XX (kind 30388) attestations from Nostr relays — settlement-anchored trust for the Lightning agent economy</p>
+  </header>
+
+  <div class="search-box">
+    <input type="text" id="pubkeyInput" placeholder="Enter Nostr pubkey (64 hex), npub, or LND node pubkey (66 hex)..." />
+    <button id="queryBtn" onclick="doQuery()">Query</button>
+  </div>
+
+  <div class="quick-links">
+    <span style="color: var(--text-muted); font-size: 12px; line-height: 30px;">Try:</span>
+    <button onclick="quickQuery('1bb7ae47020335130b9654e3c13633f92446c4717e859f82b46e6363118c6ead')">Satoshi (this node)</button>
+    <button onclick="quickQuery('03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f')">ACINQ</button>
+    <button onclick="quickQuery('03b8a5da1975f121b0b835d1187f9b0857dedfae50dcbf0ccd43e650a73effb0a8')">Levi's LND</button>
+  </div>
+
+  <div class="status-bar" id="statusBar"></div>
+
+  <div class="results" id="results"></div>
+
+  <div class="footer">
+    <p>NIP-XX: Agent Reputation Attestations — <a href="https://github.com/LeviEdwards/nip-agent-reputation" target="_blank">GitHub</a></p>
+    <p style="margin-top: 4px;">Queries kind 30388 + legacy 30078 from relay.damus.io, nos.lol, relay.primal.net, relay.snort.social</p>
+  </div>
+
+  <script>
+    // Nostr relay pool — lightweight, no build tools needed
+    const RELAYS = [
+      'wss://relay.damus.io',
+      'wss://nos.lol',
+      'wss://relay.primal.net',
+      'wss://relay.snort.social',
+    ];
+    const KIND_30388 = 30388;
+    const KIND_30078 = 30078;
+
+    const TYPE_WEIGHTS = { bilateral: 1.0, observer: 0.7, self: 0.3, unknown: 0.1 };
+
+    // bech32 decoder for npub
+    const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+    function bech32Decode(str) {
+      str = str.toLowerCase();
+      const sepIdx = str.lastIndexOf('1');
+      const hrp = str.slice(0, sepIdx);
+      const dataChars = str.slice(sepIdx + 1);
+      const data = [];
+      for (const c of dataChars) {
+        const v = BECH32_CHARSET.indexOf(c);
+        if (v < 0) throw new Error('Invalid bech32 character');
+        data.push(v);
+      }
+      // Remove checksum (last 6)
+      const values = data.slice(0, -6);
+      // Convert 5-bit groups to 8-bit
+      let acc = 0, bits = 0;
+      const result = [];
+      for (const v of values) {
+        acc = (acc << 5) | v;
+        bits += 5;
+        while (bits >= 8) {
+          bits -= 8;
+          result.push((acc >> bits) & 0xff);
+        }
+      }
+      return { hrp, bytes: new Uint8Array(result) };
+    }
+
+    function bytesToHex(bytes) {
+      return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function resolveInput(input) {
+      input = input.trim();
+      if (input.startsWith('npub1')) {
+        try {
+          const { bytes } = bech32Decode(input);
+          return bytesToHex(bytes);
+        } catch {
+          throw new Error('Invalid npub format');
+        }
+      }
+      if (/^[0-9a-fA-F]{64}$/.test(input)) return input.toLowerCase();
+      if (/^[0-9a-fA-F]{66}$/.test(input)) return input.toLowerCase();
+      throw new Error('Expected: 64-hex Nostr pubkey, 66-hex LND pubkey, or npub');
+    }
+
+    function setStatus(msg, type = '') {
+      const bar = document.getElementById('statusBar');
+      bar.className = 'status-bar visible' + (type ? ' ' + type : '');
+      bar.innerHTML = msg;
+    }
+    function hideStatus() {
+      document.getElementById('statusBar').className = 'status-bar';
+    }
+
+    function quickQuery(pk) {
+      document.getElementById('pubkeyInput').value = pk;
+      doQuery();
+    }
+
+    // Enter key support
+    document.getElementById('pubkeyInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doQuery();
+    });
+
+    async function doQuery() {
+      const input = document.getElementById('pubkeyInput').value;
+      if (!input.trim()) return;
+
+      let pubkey;
+      try {
+        pubkey = resolveInput(input);
+      } catch (err) {
+        setStatus('❌ ' + err.message, 'error');
+        return;
+      }
+
+      const btn = document.getElementById('queryBtn');
+      btn.disabled = true;
+      btn.textContent = 'Querying...';
+      setStatus('<span class="spinner"></span> Querying ' + RELAYS.length + ' relays for kind 30388 + 30078 events...');
+      document.getElementById('results').innerHTML = '';
+
+      try {
+        const events = await queryRelays(pubkey);
+        btn.disabled = false;
+        btn.textContent = 'Query';
+
+        if (events.length === 0) {
+          setStatus('No attestations found for this pubkey. The agent may not have any reputation data published yet.', 'error');
+          return;
+        }
+
+        const attestations = events.map(parseAttestation);
+        setStatus(`Found ${attestations.length} attestation${attestations.length > 1 ? 's' : ''} from ${new Set(attestations.map(a => a.attester)).size} attester${new Set(attestations.map(a => a.attester)).size > 1 ? 's' : ''}`, 'success');
+        renderResults(pubkey, attestations);
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'Query';
+        setStatus('❌ Query failed: ' + err.message, 'error');
+      }
+    }
+
+    async function queryRelays(pubkey) {
+      const allEvents = new Map();
+
+      const filters = [];
+      if (pubkey.length === 64) {
+        // Nostr pubkey — query by #p tag and author
+        filters.push({ kinds: [KIND_30388, KIND_30078], '#p': [pubkey], limit: 50 });
+        filters.push({ kinds: [KIND_30388, KIND_30078], authors: [pubkey], limit: 50 });
+      } else if (pubkey.length === 66) {
+        // LND pubkey — query by label namespace and post-filter
+        filters.push({ kinds: [KIND_30388, KIND_30078], '#L': ['agent-reputation'], limit: 100 });
+      }
+
+      const relayPromises = RELAYS.map(url => queryOneRelay(url, filters, pubkey));
+      const results = await Promise.allSettled(relayPromises);
+
+      for (const r of results) {
+        if (r.status === 'fulfilled') {
+          for (const evt of r.value) {
+            if (!allEvents.has(evt.id)) allEvents.set(evt.id, evt);
+          }
+        }
+      }
+
+      // For 66-hex (LND), post-filter by node_pubkey tag
+      let events = Array.from(allEvents.values());
+      if (pubkey.length === 66) {
+        events = events.filter(e => {
+          const npTag = (e.tags || []).find(t => t[0] === 'node_pubkey');
+          return npTag && npTag[1] === pubkey;
+        });
+      }
+
+      // For 64-hex author queries, only keep self-attestations from author
+      if (pubkey.length === 64) {
+        const filtered = [];
+        const seen = new Set();
+        for (const e of events) {
+          if (seen.has(e.id)) continue;
+          seen.add(e.id);
+          // If authored by the queried pubkey, only keep self-attestations
+          if (e.pubkey === pubkey) {
+            const aType = (e.tags || []).find(t => t[0] === 'attestation_type');
+            if (aType && aType[1] !== 'self') continue;
+          }
+          filtered.push(e);
+        }
+        events = filtered;
+      }
+
+      return events;
+    }
+
+    function queryOneRelay(url, filters, pubkey) {
+      return new Promise((resolve, reject) => {
+        const events = [];
+        let ws;
+        const timeout = setTimeout(() => {
+          try { ws.close(); } catch {}
+          resolve(events);
+        }, 12000);
+
+        try {
+          ws = new WebSocket(url);
+        } catch {
+          clearTimeout(timeout);
+          resolve([]);
+          return;
+        }
+
+        let pending = filters.length;
+
+        ws.onopen = () => {
+          filters.forEach((f, i) => {
+            ws.send(JSON.stringify(['REQ', 'q' + i, f]));
+          });
+        };
+
+        ws.onmessage = (msg) => {
+          try {
+            const data = JSON.parse(msg.data);
+            if (data[0] === 'EVENT') {
+              events.push(data[2]);
+            } else if (data[0] === 'EOSE') {
+              pending--;
+              if (pending <= 0) {
+                clearTimeout(timeout);
+                ws.close();
+                resolve(events);
+              }
+            }
+          } catch {}
+        };
+
+        ws.onerror = () => {
+          clearTimeout(timeout);
+          resolve(events);
+        };
+      });
+    }
+
+    function parseAttestation(event) {
+      const tags = event.tags || [];
+      const getTag = (name) => { const t = tags.find(x => x[0] === name); return t ? t[1] : null; };
+
+      const dimensions = tags
+        .filter(t => t[0] === 'dimension')
+        .map(t => ({ name: t[1], value: parseFloat(t[2]), sampleSize: parseInt(t[3] || '0') }));
+
+      const ageHours = (Date.now() / 1000 - event.created_at) / 3600;
+      const halfLife = parseFloat(getTag('half_life_hours') || '720');
+      const decayWeight = Math.min(1.0, Math.max(0, Math.pow(2, -ageHours / halfLife)));
+
+      let content = {};
+      try { content = JSON.parse(event.content); } catch {}
+
+      return {
+        id: event.id,
+        attester: event.pubkey,
+        subject: getTag('p') || (getTag('d') || '').split(':')[0],
+        nodePubkey: getTag('node_pubkey') || (getTag('d') || '').split(':')[0],
+        serviceType: getTag('service_type') || 'unknown',
+        attestationType: getTag('attestation_type') || 'unknown',
+        dimensions,
+        halfLifeHours: halfLife,
+        createdAt: event.created_at,
+        ageHours: Math.round(ageHours * 10) / 10,
+        decayWeight: Math.round(decayWeight * 1000) / 1000,
+        content,
+        kind: event.kind,
+      };
+    }
+
+    function aggregateAttestations(attestations) {
+      const dims = {};
+      for (const att of attestations) {
+        const tw = TYPE_WEIGHTS[att.attestationType] || 0.1;
+        const w = att.decayWeight * tw;
+        for (const dim of att.dimensions) {
+          if (dim.sampleSize === 0) continue;
+          if (!dims[dim.name]) dims[dim.name] = { weightedSum: 0, totalWeight: 0, count: 0 };
+          dims[dim.name].weightedSum += dim.value * w;
+          dims[dim.name].totalWeight += w;
+          dims[dim.name].count += 1;
+        }
+      }
+      const result = {};
+      for (const [name, agg] of Object.entries(dims)) {
+        result[name] = {
+          weightedAvg: agg.totalWeight > 0 ? agg.weightedSum / agg.totalWeight : 0,
+          numAttesters: agg.count,
+          totalWeight: Math.round(agg.totalWeight * 1000) / 1000,
+        };
+      }
+      return result;
+    }
+
+    function formatDimValue(name, value) {
+      if (name.endsWith('_rate') || name === 'payment_success_rate' || name === 'settlement_rate') {
+        return (value * 100).toFixed(1) + '%';
+      }
+      if (name === 'uptime_percent') return value.toFixed(1) + '%';
+      if (name.endsWith('_ms')) return Math.round(value).toLocaleString() + 'ms';
+      if (name.endsWith('_sats') || name === 'capacity_sats' || name === 'transaction_volume_sats') {
+        if (value >= 100_000_000) return (value / 100_000_000).toFixed(2) + ' BTC';
+        if (value >= 1_000_000) return (value / 1_000_000).toFixed(2) + 'M sats';
+        if (value >= 1_000) return (value / 1_000).toFixed(1) + 'K sats';
+        return Math.round(value).toLocaleString() + ' sats';
+      }
+      if (Number.isInteger(value)) return value.toLocaleString();
+      return value.toFixed(4);
+    }
+
+    function dimValueClass(name, value) {
+      if (name === 'payment_success_rate' || name === 'settlement_rate') {
+        if (value >= 0.95) return 'high';
+        if (value >= 0.80) return 'medium';
+        return 'low';
+      }
+      if (name === 'uptime_percent') {
+        if (value >= 99) return 'high';
+        if (value >= 95) return 'medium';
+        return 'low';
+      }
+      if (name === 'dispute_rate') {
+        if (value <= 0.02) return 'high';
+        if (value <= 0.05) return 'medium';
+        return 'low';
+      }
+      return 'neutral';
+    }
+
+    function dimFriendlyName(name) {
+      return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function timeAgo(hours) {
+      if (hours < 1) return Math.round(hours * 60) + 'm ago';
+      if (hours < 24) return Math.round(hours) + 'h ago';
+      if (hours < 24 * 30) return Math.round(hours / 24) + 'd ago';
+      return Math.round(hours / (24 * 30)) + 'mo ago';
+    }
+
+    function shortPubkey(pk) {
+      if (!pk) return '???';
+      return pk.slice(0, 8) + '...' + pk.slice(-8);
+    }
+
+    function trustLevel(totalWeightMax) {
+      if (totalWeightMax >= 1.0) return { label: 'Verified', color: 'var(--green)', pct: Math.min(100, totalWeightMax * 50) };
+      if (totalWeightMax >= 0.5) return { label: 'Moderate', color: 'var(--yellow)', pct: totalWeightMax * 50 };
+      return { label: 'Low (self-reported only)', color: 'var(--red)', pct: Math.max(5, totalWeightMax * 50) };
+    }
+
+    function renderResults(pubkey, attestations) {
+      const container = document.getElementById('results');
+      const agg = aggregateAttestations(attestations);
+      const types = attestations.map(a => a.attestationType);
+      const hasBilateral = types.includes('bilateral');
+      const hasObserver = types.includes('observer');
+      const selfOnly = !hasBilateral && !hasObserver;
+
+      // Max total weight across dimensions
+      const maxWeight = Math.max(...Object.values(agg).map(d => d.totalWeight), 0);
+      const trust = trustLevel(maxWeight);
+
+      // Service types found
+      const serviceTypes = [...new Set(attestations.map(a => a.serviceType))];
+
+      // Build summary card
+      let html = `
+        <div class="summary-card">
+          <h2>Aggregated Reputation</h2>
+          <div class="meta">
+            <code>${shortPubkey(pubkey)}</code>
+            ${attestations[0]?.content?.node_alias ? ' — ' + attestations[0].content.node_alias : ''}
+            &nbsp;·&nbsp; ${serviceTypes.join(', ')}
+            &nbsp;·&nbsp; ${attestations.length} attestation${attestations.length > 1 ? 's' : ''}
+          </div>
+          <div class="dimensions-grid">
+      `;
+
+      // Sort dimensions: rates first, then capacity/volume, then others
+      const dimOrder = ['payment_success_rate', 'settlement_rate', 'uptime_percent', 'dispute_rate',
+                        'response_time_ms', 'capacity_sats', 'transaction_volume_sats'];
+      const dimNames = Object.keys(agg).sort((a, b) => {
+        const ai = dimOrder.indexOf(a);
+        const bi = dimOrder.indexOf(b);
+        return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+      });
+
+      for (const name of dimNames) {
+        const d = agg[name];
+        const cls = dimValueClass(name, d.weightedAvg);
+        html += `
+          <div class="dim-card">
+            <div class="dim-name">${dimFriendlyName(name)}</div>
+            <div class="dim-value ${cls}">${formatDimValue(name, d.weightedAvg)}</div>
+            <div class="dim-detail">${d.numAttesters} attester${d.numAttesters > 1 ? 's' : ''} · weight ${d.totalWeight.toFixed(2)}</div>
+          </div>
+        `;
+      }
+
+      html += `</div>`;
+
+      // Trust bar
+      html += `
+        <div class="trust-bar">
+          <h3>Trust Level</h3>
+          <div class="trust-meter">
+            <div class="fill" style="width: ${trust.pct}%; background: ${trust.color};"></div>
+          </div>
+          <div class="trust-label">
+            <span>${trust.label}${selfOnly ? ' ⚠️' : ''}</span>
+            <span>Max weight: ${maxWeight.toFixed(2)}</span>
+          </div>
+        </div>
+      `;
+
+      html += `</div>`;
+
+      // Individual attestations
+      html += `<div class="attestation-list"><h3>Individual Attestations</h3>`;
+
+      // Sort: bilateral first, then observer, then self; newest first within type
+      const sorted = [...attestations].sort((a, b) => {
+        const typeOrder = { bilateral: 0, observer: 1, self: 2, unknown: 3 };
+        const td = (typeOrder[a.attestationType] || 3) - (typeOrder[b.attestationType] || 3);
+        if (td !== 0) return td;
+        return b.createdAt - a.createdAt;
+      });
+
+      for (const att of sorted) {
+        const tw = TYPE_WEIGHTS[att.attestationType] || 0.1;
+        const effectiveWeight = (att.decayWeight * tw).toFixed(3);
+        html += `
+          <div class="attestation-item">
+            <div class="att-header">
+              <div>
+                <span class="att-type ${att.attestationType}">${att.attestationType}</span>
+                <span class="att-age">${timeAgo(att.ageHours)}</span>
+                <span style="font-size: 11px; color: var(--text-muted); margin-left: 8px;">kind ${att.kind}</span>
+              </div>
+              <div class="att-weight">effective weight: <strong>${effectiveWeight}</strong></div>
+            </div>
+            <div class="att-dims">
+        `;
+        for (const dim of att.dimensions) {
+          html += `<span class="att-dim-tag"><span class="dim-label">${dim.name}:</span> ${formatDimValue(dim.name, dim.value)} <span class="dim-label">(n=${dim.sampleSize})</span></span>`;
+        }
+        html += `</div>`;
+        html += `<div class="att-attester">attester: ${shortPubkey(att.attester)} · service: ${att.serviceType} · decay: ${att.decayWeight.toFixed(3)}</div>`;
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+      container.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
