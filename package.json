@@ -1,6 +1,6 @@
 {
   "name": "nip-agent-reputation",
-  "version": "0.6.0",
+  "version": "0.9.0",
   "type": "module",
   "description": "Nostr protocol for agent reputation attestations on Lightning Network — reference implementation of NIP-XX",
   "main": "index.js",
@@ -13,6 +13,8 @@
     "./auto-publish": "./src/auto-publish.js",
     "./web-of-trust": "./src/web-of-trust.js",
     "./discover": "./src/discover.js",
+    "./validate": "./src/validate.js",
+    "./server": "./src/server.js",
     "./constants": "./src/constants.js",
     "./keys": "./src/keys.js",
     "./lnd": "./src/lnd.js"
@@ -21,10 +23,11 @@
     "nip-reputation": "./src/cli.js"
   },
   "scripts": {
-    "test": "node src/test-decay.js && node src/test-bilateral.js && node src/test-auto-publish.js && node src/test-integration.js && node src/test-observer.js && node src/test-web-of-trust.js && node src/test-discover.js",
+    "test": "node src/test-decay.js && node src/test-bilateral.js && node src/test-auto-publish.js && node src/test-integration.js && node src/test-observer.js && node src/test-web-of-trust.js && node src/test-discover.js && node src/test-validate.js && node src/test-server.js",
     "collect": "node src/cli.js collect",
     "publish": "node src/cli.js publish",
-    "publish:auto": "node src/cli.js publish --auto"
+    "publish:auto": "node src/cli.js publish --auto",
+    "serve": "node src/cli.js serve"
   },
   "keywords": [
     "nostr",
@@ -63,6 +66,8 @@
     "src/keys.js",
     "src/lnd.js",
     "src/discover.js",
+    "src/validate.js",
+    "src/server.js",
     "src/cli.js",
     "NIP-XX.md",
     "README.md"

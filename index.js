@@ -68,6 +68,18 @@ export {
   formatDiscoveryResults,
 } from './src/discover.js';
 
+// Validation
+export {
+  validateAttestation,
+  validateHandler,
+  validateBatch,
+} from './src/validate.js';
+
+// HTTP API Server
+export {
+  createServer,
+} from './src/server.js';
+
 // Key management
 export {
   getKeypair,

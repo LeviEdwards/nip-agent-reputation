@@ -55,6 +55,12 @@ import {
   discoverServices,
   formatDiscoveryResults,
 } from './discover.js';
+import {
+  validateAttestation,
+  validateHandler,
+  validateBatch,
+} from './validate.js';
+import { createServer } from './server.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -88,6 +94,10 @@ async function main() {
       return cmdTrust();
     case 'discover':
       return cmdDiscover();
+    case 'validate':
+      return cmdValidate();
+    case 'serve':
+      return cmdServe();
     default:
       console.log(`NIP Agent Reputation — Reference Implementation v0.6
 
@@ -126,6 +136,17 @@ Service discovery:
   node src/cli.js discover --reputation           Enrich with reputation data
   node src/cli.js discover --max-age <days>       Only show services declared within N days
   node src/cli.js discover --json                 Output as JSON
+
+Validation:
+  node src/cli.js validate '<event_json>'          Validate an attestation or handler event
+  node src/cli.js validate --file <path>           Validate events from a JSON file (array or single)
+  node src/cli.js validate --strict                Treat warnings as errors
+  node src/cli.js validate --query <pubkey>        Fetch & validate all attestations for a pubkey
+
+HTTP API Server:
+  node src/cli.js serve                            Start reputation API server (default port 3388)
+  node src/cli.js serve --port <n>                 Start on custom port
+  node src/cli.js serve --relays <url1,url2>       Use custom relay list
 `);
       process.exit(1);
   }
@@ -718,6 +739,104 @@ async function cmdDiscover() {
   } finally {
     pool.close(DEFAULT_RELAYS);
   }
+}
+
+async function cmdValidate() {
+  const args = process.argv.slice(3);
+  const strict = args.includes('--strict');
+  const fileIdx = args.indexOf('--file');
+  const queryIdx = args.indexOf('--query');
+
+  let events = [];
+
+  if (queryIdx !== -1) {
+    // Fetch from relays and validate
+    const pubkey = args[queryIdx + 1];
+    if (!pubkey) {
+      console.error('Usage: validate --query <pubkey>');
+      process.exit(1);
+    }
+    console.log(`Fetching attestations for ${pubkey.slice(0, 16)}... from relays...\n`);
+    const attestations = await queryAttestations(pubkey);
+    events = attestations.map(a => a.raw);
+    if (events.length === 0) {
+      console.log('No attestations found.');
+      return;
+    }
+  } else if (fileIdx !== -1) {
+    // Load from file
+    const filePath = args[fileIdx + 1];
+    if (!filePath) {
+      console.error('Usage: validate --file <path>');
+      process.exit(1);
+    }
+    const content = readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(content);
+    events = Array.isArray(parsed) ? parsed : [parsed];
+  } else {
+    // Inline JSON argument
+    const json = args.filter(a => !a.startsWith('--'))[0];
+    if (!json) {
+      console.error('Usage: validate \'<event_json>\' | --file <path> | --query <pubkey>');
+      process.exit(1);
+    }
+    events = [JSON.parse(json)];
+  }
+
+  const { results, summary } = validateBatch(events, { strict });
+
+  for (let i = 0; i < results.length; i++) {
+    const { event, validation } = results[i];
+    const label = event?.id ? event.id.slice(0, 12) + '...' : `event[${i}]`;
+    const status = validation.valid ? '✓ VALID' : '✗ INVALID';
+    console.log(`${status}  ${label}  (kind ${event?.kind || '?'})`);
+
+    for (const err of validation.errors) {
+      console.log(`  ✗ ERROR  [${err.code}] ${err.message}`);
+    }
+    for (const warn of validation.warnings) {
+      console.log(`  ⚠ WARN   [${warn.code}] ${warn.message}`);
+    }
+    for (const info of validation.info) {
+      console.log(`  ℹ INFO   [${info.code}] ${info.message}`);
+    }
+
+    if (i < results.length - 1) console.log('');
+  }
+
+  console.log(`\n--- Summary: ${summary.valid}/${summary.total} valid, ${summary.totalErrors} errors, ${summary.totalWarnings} warnings ---`);
+
+  if (summary.invalid > 0) process.exit(1);
+}
+
+async function cmdServe() {
+  const args = process.argv.slice(3);
+  const options = {};
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--port' && args[i + 1]) {
+      options.port = parseInt(args[i + 1], 10);
+      i++;
+    } else if (args[i] === '--relays' && args[i + 1]) {
+      options.relays = args[i + 1].split(',');
+      i++;
+    }
+  }
+
+  const { server, port, relayUrls } = createServer(options);
+
+  server.listen(port, () => {
+    console.log(`⚡ NIP Agent Reputation API Server`);
+    console.log(`   Port:     ${port}`);
+    console.log(`   Relays:   ${relayUrls.join(', ')}`);
+    console.log(`   Docs:     http://localhost:${port}/`);
+    console.log(`   Query:    http://localhost:${port}/reputation/<pubkey>`);
+    console.log(`   Discover: http://localhost:${port}/discover`);
+    console.log(`   Validate: POST http://localhost:${port}/validate`);
+    console.log(`   Health:   http://localhost:${port}/health`);
+    console.log();
+    console.log('Press Ctrl+C to stop.');
+  });
 }
 
 main().catch(err => {
