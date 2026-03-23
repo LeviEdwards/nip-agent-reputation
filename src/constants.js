@@ -14,5 +14,6 @@ export const ATTESTATION_KIND = 30385;
 // Handler declaration kind — NIP-89 compatible
 export const HANDLER_KIND = 31990;
 
-// Legacy kind (for backwards-compatible querying during migration)
+// Legacy kinds (for backwards-compatible querying during migration)
 export const LEGACY_ATTESTATION_KIND = 30078;
+export const LEGACY_ATTESTATION_KIND_2 = 30388; // Was used before discovering Corny Chat claimed it

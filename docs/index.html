@@ -447,6 +447,7 @@
       'wss://relay.snort.social',
     ];
     const KIND_30385 = 30385;
+    const KIND_30388 = 30388; // legacy, query for backwards compat
     const KIND_30078 = 30078;
 
     const TYPE_WEIGHTS = { bilateral: 1.0, observer: 0.7, self: 0.3, unknown: 0.1 };
@@ -562,11 +563,11 @@
       const filters = [];
       if (pubkey.length === 64) {
         // Nostr pubkey — query by #p tag and author
-        filters.push({ kinds: [KIND_30385, KIND_30078], '#p': [pubkey], limit: 50 });
-        filters.push({ kinds: [KIND_30385, KIND_30078], authors: [pubkey], limit: 50 });
+        filters.push({ kinds: [KIND_30385, KIND_30388, KIND_30078], '#p': [pubkey], limit: 50 });
+        filters.push({ kinds: [KIND_30385, KIND_30388, KIND_30078], authors: [pubkey], limit: 50 });
       } else if (pubkey.length === 66) {
         // LND pubkey — query by label namespace and post-filter
-        filters.push({ kinds: [KIND_30385, KIND_30078], '#L': ['agent-reputation'], limit: 100 });
+        filters.push({ kinds: [KIND_30385, KIND_30388, KIND_30078], '#L': ['agent-reputation'], limit: 100 });
       }
 
       const relayPromises = RELAYS.map(url => queryOneRelay(url, filters, pubkey));

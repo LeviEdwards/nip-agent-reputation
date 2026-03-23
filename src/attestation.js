@@ -12,7 +12,7 @@ import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
 import { SimplePool } from 'nostr-tools/pool';
 import { useWebSocketImplementation } from 'nostr-tools/pool';
 import WebSocket from 'ws';
-import { ATTESTATION_KIND, LEGACY_ATTESTATION_KIND } from './constants.js';
+import { ATTESTATION_KIND, LEGACY_ATTESTATION_KIND, LEGACY_ATTESTATION_KIND_2 } from './constants.js';
 
 // Polyfill WebSocket for Node.js
 useWebSocketImplementation(WebSocket);
@@ -133,8 +133,8 @@ export async function queryAttestations(subjectPubkey, relays = DEFAULT_RELAYS, 
   const pool = new SimplePool();
   const serviceType = opts.serviceType || null;
   
-  // Query both new kind (30388) and legacy kind (30078) for backwards compatibility
-  const baseFilter = { kinds: [ATTESTATION_KIND, LEGACY_ATTESTATION_KIND] };
+  // Query current kind (30385) and legacy kinds (30388, 30078) for backwards compatibility
+  const baseFilter = { kinds: [ATTESTATION_KIND, LEGACY_ATTESTATION_KIND_2, LEGACY_ATTESTATION_KIND] };
   if (opts.since) baseFilter.since = opts.since;
   if (opts.limit) baseFilter.limit = opts.limit;
   

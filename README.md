@@ -409,7 +409,7 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Privacy fix**: renamed "Levi's LND" quick link to "Operator's LND Node" on public dashboard
 - [x] **Dashboard URL** (pending Pages activation): `https://leviedwards.github.io/nip-agent-reputation/`
 - [x] ⚠️ **Pages needs manual activation**: Levi needs to go to repo Settings → Pages → Source: "GitHub Actions" (the API token doesn't have Pages scope). One-time setup, then auto-deploys on every push to docs/
-- [ ] ⚠️ **GitHub PAT expired** — commit `d5cfba9` saved locally but push failed. Levi needs to provide a new PAT with `contents:write` scope
+- [x] ~~GitHub PAT expired~~ — commit `d5cfba9` saved locally but push failed. Levi needs to provide a new PAT with `contents:write` scope
 - [x] All 285 tests still pass
 
 ### v0.8 (2026-03-21) — Service Discovery + 328 Tests
@@ -425,7 +425,7 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Live test confirmed**: discovers our handler declaration on 4 relays, reputation enrichment shows 3 attestations with moderate trust
 - [x] **Exports added**: `discoverServices` and `formatDiscoveryResults` in index.js and package.json
 - [x] **Total: 328 tests pass** (44 bilateral + 37 auto-publish + decay + 64 integration + 86 observer + 54 web-of-trust + 43 discover)
-- [ ] ⚠️ **GitHub PAT still expired** — 2 commits saved locally, push blocked. Levi needs to provide new PAT with `contents:write` scope
+- [x] ~~GitHub PAT still expired~~ — 2 commits saved locally, push blocked. Levi needs to provide new PAT with `contents:write` scope
 
 ### v0.9.1 (2026-03-23) — Kind 30388 → 30385 Migration
 - [x] **CRITICAL FIX: Kind 30388 already claimed** — Discovered that kind 30388 is registered by Corny Chat for "Slide Set" in the nostr-protocol/nips repo. Our NIP cannot use it
@@ -442,11 +442,20 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **All 461 tests pass** — zero failures after migration
 - [x] **Git push working** — PAT issue resolved, pushes succeed
 
-### TODO
-- [ ] Publish to npm (once Levi provides auth token)
+### v0.9.2 (2026-03-23) — Backwards-compatible legacy kind querying
+- [x] **Added LEGACY_ATTESTATION_KIND_2 (30388)** to constants.js — queries now fetch kind 30385 + 30388 + 30078
+- [x] **Updated attestation.js queryAttestations()** to include all three kinds in relay queries
+- [x] **Updated dashboard HTML** (both dashboard/ and docs/) to query all three kinds
+- [x] **Re-published observer attestations** with kind 30385: ACINQ (event `119250c8...`) and our own node (event `6598cc5f...`)
+- [x] **Synced NIP.md** with NIP-XX.md (was stale with old kind 30078 references)
+- [x] **461 tests still pass** — zero failures
+
+### TODO (Consolidated)
+- [ ] Publish to npm (needs npm auth token from Levi)
+- [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips)
 - [ ] Live bilateral attestation from a real counterparty (not self-generated)
-- [ ] Submit NIP-XX as PR to nostr/nips repo
-- [ ] Community feedback: share in Nostr dev channels, Lightning dev Telegram/Discord
-- [x] Host dashboard publicly (GitHub Pages) — **done, pending Levi enabling Pages in repo settings**
-- [x] Service discovery module (discover.js) — **complete with 43 tests**
-- [ ] Re-publish observer attestations with kind 30385 (old kind 30388 ones are orphaned on relays)
+- [ ] Community feedback: share in Nostr dev channels, Lightning dev Telegram/Discord, Moltbook
+- [x] Host dashboard publicly (GitHub Pages) — pending Levi enabling Pages in repo settings
+- [x] Service discovery module (discover.js) — complete with 43 tests
+- [x] Re-publish observer attestations with kind 30385 — done (ACINQ + our node)
+- [x] Backwards-compatible querying for legacy kinds 30388 and 30078 — done
