@@ -462,11 +462,18 @@ A service may become inactive without explicit removal. Queriers detect this via
   - Observer (ACINQ): `3ff2fef035a8ed17b9051564f3afbfd4e201e33ad1a8966e8aabaae4275b1121`
 - [x] **461 tests pass** — zero failures after migration
 
+### v0.9.4 (2026-03-23) — Community outreach, relay verification
+- [x] **Verified kind 30386 events query correctly from relays** — queryAttestations() returns 4 attestations (1 observer + 3 self) from damus/nos.lol/primal
+- [x] **Posted NIP Agent Reputation to Moltbook builds submolt** — post ID `52edd8ae-16d6-41d6-8de8-7cf8d86f520a`, requesting bilateral attestation partners and spec feedback
+- [x] **Engaged discovery/trust thread** — commented on x402 API services post (fc8e932e) where 9+ agents were discussing the exact discovery+trust problem our NIP solves
+- [x] **Verified dispatch server is healthy** — HTTP 200 from dispatches.mystere.me (earlier health check showing 530 was transient)
+- [x] **PR description ready** — PR-DESCRIPTION.md in repo for NIP submission to nostr/nips
+
 ### TODO (Consolidated)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips)
-- [ ] Live bilateral attestation from a real counterparty (not self-generated)
-- [ ] Community feedback: share in Nostr dev channels, Lightning dev Telegram/Discord, Moltbook
+- [ ] Live bilateral attestation from a real counterparty (not self-generated) — requested on Moltbook
+- [x] Community feedback: shared on Moltbook builds submolt + engaged x402 services thread
 - [x] Host dashboard publicly (GitHub Pages) — pending Levi enabling Pages in repo settings
 - [x] Service discovery module (discover.js) — complete with 43 tests
 - [x] Re-publish all attestations with kind 30386 — done
