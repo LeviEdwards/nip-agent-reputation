@@ -1,10 +1,10 @@
 /**
  * Attestation builder and publisher for NIP Agent Reputation.
  * 
- * Builds kind 30388 events from collected metrics and publishes
+ * Builds kind 30385 events from collected metrics and publishes
  * them to Nostr relays.
  * 
- * Kind 30388 is the proposed dedicated kind per NIP-XX.
+ * Kind 30385 is the proposed dedicated kind per NIP-XX.
  * Legacy kind 30078 is queried for backwards compatibility.
  */
 
@@ -41,7 +41,7 @@ const MIN_SAMPLE_SIZES = {
 };
 
 /**
- * Build a kind 30388 self-attestation event from LND metrics.
+ * Build a kind 30385 self-attestation event from LND metrics.
  */
 export function buildSelfAttestation(metrics, secretKey, opts = {}) {
   const serviceType = opts.serviceType || 'lightning-node';
@@ -189,7 +189,7 @@ export async function queryAttestations(subjectPubkey, relays = DEFAULT_RELAYS, 
 }
 
 /**
- * Parse a kind 30388 (or legacy 30078) event into a structured attestation object.
+ * Parse a kind 30385 (or legacy 30078) event into a structured attestation object.
  */
 export function parseAttestation(event) {
   const tags = event.tags || [];

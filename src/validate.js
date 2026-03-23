@@ -1,7 +1,7 @@
 /**
  * Validation module for NIP Agent Reputation attestation events.
  * 
- * Validates that attestation events (kind 30388/30078) conform to the spec
+ * Validates that attestation events (kind 30385/30078) conform to the spec
  * before they're processed by the aggregation pipeline. Returns structured
  * validation results with severity levels (error/warning/info).
  * 
@@ -102,7 +102,7 @@ function getTag(tags, name) {
 }
 
 /**
- * Validate a kind 30388 (or legacy 30078) attestation event.
+ * Validate a kind 30385 (or legacy 30078) attestation event.
  * 
  * @param {Object} event - Raw Nostr event object
  * @param {Object} opts - Validation options

@@ -6,7 +6,7 @@
   <title>NIP-XX: Agent Reputation Attestations — Lightning Network</title>
   <meta name="description" content="Settlement-anchored reputation for autonomous agents on the Lightning Network. Query live attestations from Nostr relays.">
   <meta property="og:title" content="NIP-XX: Agent Reputation Attestations">
-  <meta property="og:description" content="Settlement-anchored reputation for autonomous agents on the Lightning Network. Query live kind 30388 attestations from Nostr relays.">
+  <meta property="og:description" content="Settlement-anchored reputation for autonomous agents on the Lightning Network. Query live kind 30385 attestations from Nostr relays.">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="NIP-XX: Agent Reputation Attestations">
@@ -378,7 +378,7 @@
 <body>
   <header>
     <h1>⚡ Agent <span>Reputation</span> Dashboard</h1>
-    <p>Query NIP-XX (kind 30388) attestations from Nostr relays — settlement-anchored trust for the Lightning agent economy</p>
+    <p>Query NIP-XX (kind 30385) attestations from Nostr relays — settlement-anchored trust for the Lightning agent economy</p>
   </header>
 
   <div class="search-box">
@@ -434,7 +434,7 @@
 
   <div class="footer">
     <p>NIP-XX: Agent Reputation Attestations — <a href="https://github.com/LeviEdwards/nip-agent-reputation" target="_blank">GitHub</a></p>
-    <p style="margin-top: 4px;">Queries kind 30388 + legacy 30078 from relay.damus.io, nos.lol, relay.primal.net, relay.snort.social</p>
+    <p style="margin-top: 4px;">Queries kind 30385 + legacy 30078 from relay.damus.io, nos.lol, relay.primal.net, relay.snort.social</p>
     <p style="margin-top: 4px;">Built by an autonomous agent on a Raspberry Pi ⚡</p>
   </div>
 
@@ -446,7 +446,7 @@
       'wss://relay.primal.net',
       'wss://relay.snort.social',
     ];
-    const KIND_30388 = 30388;
+    const KIND_30385 = 30385;
     const KIND_30078 = 30078;
 
     const TYPE_WEIGHTS = { bilateral: 1.0, observer: 0.7, self: 0.3, unknown: 0.1 };
@@ -533,7 +533,7 @@
       const btn = document.getElementById('queryBtn');
       btn.disabled = true;
       btn.textContent = 'Querying...';
-      setStatus('<span class="spinner"></span> Querying ' + RELAYS.length + ' relays for kind 30388 + 30078 events...');
+      setStatus('<span class="spinner"></span> Querying ' + RELAYS.length + ' relays for kind 30385 + 30078 events...');
       document.getElementById('results').innerHTML = '';
 
       try {
@@ -562,11 +562,11 @@
       const filters = [];
       if (pubkey.length === 64) {
         // Nostr pubkey — query by #p tag and author
-        filters.push({ kinds: [KIND_30388, KIND_30078], '#p': [pubkey], limit: 50 });
-        filters.push({ kinds: [KIND_30388, KIND_30078], authors: [pubkey], limit: 50 });
+        filters.push({ kinds: [KIND_30385, KIND_30078], '#p': [pubkey], limit: 50 });
+        filters.push({ kinds: [KIND_30385, KIND_30078], authors: [pubkey], limit: 50 });
       } else if (pubkey.length === 66) {
         // LND pubkey — query by label namespace and post-filter
-        filters.push({ kinds: [KIND_30388, KIND_30078], '#L': ['agent-reputation'], limit: 100 });
+        filters.push({ kinds: [KIND_30385, KIND_30078], '#L': ['agent-reputation'], limit: 100 });
       }
 
       const relayPromises = RELAYS.map(url => queryOneRelay(url, filters, pubkey));

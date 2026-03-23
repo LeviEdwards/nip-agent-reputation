@@ -2,7 +2,7 @@
  * Bilateral attestation builder for NIP Agent Reputation.
  * 
  * After a transaction between two agents, each party publishes
- * a kind 30388 attestation of the other's behavior.
+ * a kind 30385 attestation of the other's behavior.
  * 
  * Usage:
  *   import { buildBilateralAttestation, TransactionRecord } from './bilateral.js';
@@ -143,7 +143,7 @@ export class TransactionHistory {
 }
 
 /**
- * Build a bilateral attestation event (kind 30388).
+ * Build a bilateral attestation event (kind 30385).
  * 
  * This is published by the attester after transacting with the subject.
  * The attestation type is 'bilateral', carrying higher trust weight

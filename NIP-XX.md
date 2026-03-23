@@ -29,9 +29,9 @@ This NIP defines one new event kind:
 
 | Kind  | Description               | NIP-XX |
 | ----- | ------------------------- | ------ |
-| 30388 | Agent reputation attestation | XX   |
+| 30385 | Agent reputation attestation | XX   |
 
-Kind `30388` is a [replaceable parameterized event](01.md). The `d` tag identifies the subject:
+Kind `30385` is a [replaceable parameterized event](01.md). The `d` tag identifies the subject:
 
 ```
 ["d", "<subject_pubkey>:<service_type>"]
@@ -43,7 +43,7 @@ Service handler declarations reuse [NIP-89](89.md) kind `31990`.
 
 ```jsonc
 {
-  "kind": 30388,
+  "kind": 30385,
   "pubkey": "<attester_pubkey>",
   "created_at": <unix_timestamp>,
   "tags": [
@@ -184,7 +184,7 @@ Agents SHOULD publish a [NIP-89](89.md) kind `31990` event declaring what servic
   "kind": 31990,
   "tags": [
     ["d", "<service_identifier>"],
-    ["k", "30388"],
+    ["k", "30385"],
     ["description", "Bitcoin network data API"],
     ["price", "10", "sats", "per-request"],
     ["protocol", "L402"],
@@ -195,7 +195,7 @@ Agents SHOULD publish a [NIP-89](89.md) kind `31990` event declaring what servic
 }
 ```
 
-The `k` tag references kind `30388`, making agent services discoverable via standard NIP-89 queries for `kind:31990` + `#k:30388`.
+The `k` tag references kind `30385`, making agent services discoverable via standard NIP-89 queries for `kind:31990` + `#k:30385`.
 
 Additional tags extend NIP-89 for agent use cases:
 
@@ -209,7 +209,7 @@ Additional tags extend NIP-89 for agent use cases:
 
 To query an agent's reputation:
 
-1. Subscribe to kind `30388` events with `#p` filter matching the subject's Nostr pubkey, OR use `#L` filter for `agent-reputation` and post-filter on `node_pubkey` tag
+1. Subscribe to kind `30385` events with `#p` filter matching the subject's Nostr pubkey, OR use `#L` filter for `agent-reputation` and post-filter on `node_pubkey` tag
 2. Collect attestations from multiple attesters
 3. Apply decay weighting based on age and `half_life_hours`
 4. Weight by attestation type (`bilateral` > `observer` > `self`)

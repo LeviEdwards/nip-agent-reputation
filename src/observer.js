@@ -197,7 +197,7 @@ export class ObservationSession {
 }
 
 /**
- * Build an observer attestation event (kind 30388).
+ * Build an observer attestation event (kind 30385).
  * 
  * @param {ObservationSession} session - Accumulated observation data
  * @param {Uint8Array} secretKey - Observer's Nostr secret key

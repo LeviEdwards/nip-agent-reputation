@@ -1,6 +1,6 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v0.8 — Kind 30388 live on relays, npm package ready, repo public, dashboard hosted, service discovery complete
+**Status:** DRAFT v0.9.1 — Kind 30385 (migrated from 30388, which was claimed by Corny Chat). npm package ready, repo public, dashboard hosted, service discovery complete, 461 tests
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
 **Last Updated:** 2026-03-21
@@ -33,7 +33,7 @@ What's needed: a protocol-level reputation system where trust is earned through 
 
 ### Event Kind
 
-Use **kind 30078** (replaceable parameterized event) for reputation attestations.
+Use **kind 30385** (replaceable parameterized event) for reputation attestations.
 
 The `d` tag identifies the subject being attested:
 ```json
@@ -46,7 +46,7 @@ The `d` tag identifies the subject being attested:
 
 ```json
 {
-  "kind": 30078,
+  "kind": 30385,
   "pubkey": "<attester_nostr_pubkey>",
   "created_at": <unix_timestamp>,
   "tags": [
@@ -167,7 +167,7 @@ The `k` tag indicates which event kind this handler can process (kind `30078` fo
   "kind": 31990,
   "tags": [
     ["d", "<service_identifier>"],
-    ["k", "30078"],
+    ["k", "30385"],
     ["description", "Bitcoin network data API"],
     ["price", "10", "sats", "per-request"],
     ["protocol", "L402"],
@@ -188,7 +188,7 @@ The `k` tag indicates which event kind this handler can process (kind `30078` fo
 
 To query an agent's reputation:
 
-1. Subscribe to kind 30078 events with `#p` filter for the subject pubkey
+1. Subscribe to kind 30385 events with `#p` filter for the subject pubkey
 2. Collect attestations from multiple attesters
 3. Apply decay weighting based on age and half-life
 4. Weight by attestation type (bilateral > observer > self)
@@ -427,11 +427,26 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Total: 328 tests pass** (44 bilateral + 37 auto-publish + decay + 64 integration + 86 observer + 54 web-of-trust + 43 discover)
 - [ ] ⚠️ **GitHub PAT still expired** — 2 commits saved locally, push blocked. Levi needs to provide new PAT with `contents:write` scope
 
-### TODO — v0.8
+### v0.9.1 (2026-03-23) — Kind 30388 → 30385 Migration
+- [x] **CRITICAL FIX: Kind 30388 already claimed** — Discovered that kind 30388 is registered by Corny Chat for "Slide Set" in the nostr-protocol/nips repo. Our NIP cannot use it
+- [x] **Migrated to kind 30385** — Adjacent to NIP-85 trusted assertions (30382-30384), same trust/reputation domain. Semantically appropriate placement
+- [x] **Updated all source files**: constants.js, attestation.js, bilateral.js, observer.js, validate.js, server.js, test-discover.js, test-integration.js
+- [x] **Updated NIP-XX.md** formal spec — all references now use kind 30385
+- [x] **Updated dashboards**: dashboard/index.html, docs/index.html, dashboard/README.md
+- [x] **Updated server default port**: 3388 → 3385 (port matches kind number convention)
+- [x] **Also updated QUERY_TIMEOUT_MS** to be configurable via env var, and fixed port:0 falsy bug in server.js (from previous session)
+- [x] **Published kind 30385 self-attestation** to all 4 relays — all accepted
+  - Event ID: `cb49dc008bd16314ad8065bf42259183c02fa69a48fda929c5b9ea7522144a13`
+- [x] **Published kind 31990 handler declaration** with updated `k` tag referencing 30385 — all 4 relays accepted
+  - Event ID: `0891610995dee183a6373016d2b94f8c2bc2e8409f074407179bd28c5c9ab9b8`
+- [x] **All 461 tests pass** — zero failures after migration
+- [x] **Git push working** — PAT issue resolved, pushes succeed
+
+### TODO
 - [ ] Publish to npm (once Levi provides auth token)
 - [ ] Live bilateral attestation from a real counterparty (not self-generated)
 - [ ] Submit NIP-XX as PR to nostr/nips repo
 - [ ] Community feedback: share in Nostr dev channels, Lightning dev Telegram/Discord
-- [ ] **Git push** — 2 local commits waiting (v0.7.1 + v0.8). Needs new GitHub PAT from Levi
 - [x] Host dashboard publicly (GitHub Pages) — **done, pending Levi enabling Pages in repo settings**
 - [x] Service discovery module (discover.js) — **complete with 43 tests**
+- [ ] Re-publish observer attestations with kind 30385 (old kind 30388 ones are orphaned on relays)
