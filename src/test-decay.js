@@ -11,7 +11,7 @@
  */
 
 import { parseAttestation, aggregateAttestations } from './attestation.js';
-import { ATTESTATION_KIND, LEGACY_ATTESTATION_KIND } from './constants.js';
+import { ATTESTATION_KIND, LEGACY_KINDS } from './constants.js';
 
 const NOW = Math.floor(Date.now() / 1000);
 const HOUR = 3600;

@@ -3,7 +3,7 @@
  */
 
 import { validateAttestation, validateHandler, validateBatch } from './validate.js';
-import { ATTESTATION_KIND, LEGACY_ATTESTATION_KIND, HANDLER_KIND } from './constants.js';
+import { ATTESTATION_KIND, LEGACY_KINDS, HANDLER_KIND } from './constants.js';
 
 let passed = 0;
 let failed = 0;
@@ -96,7 +96,7 @@ test('wrong kind fails', () => {
 });
 
 test('legacy kind 30078 passes with info note', () => {
-  const r = validateAttestation(validAttestation({ kind: LEGACY_ATTESTATION_KIND }));
+  const r = validateAttestation(validAttestation({ kind: LEGACY_KINDS[0] }));
   assert(r.valid, 'should be valid');
   assert(r.info.some(i => i.code === 'LEGACY_KIND'), 'has LEGACY_KIND info');
 });

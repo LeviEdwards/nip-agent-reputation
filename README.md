@@ -1,6 +1,6 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v0.9.1 — Kind 30385 (migrated from 30388, which was claimed by Corny Chat). npm package ready, repo public, dashboard hosted, service discovery complete, 461 tests
+**Status:** DRAFT v0.9.3 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 461 tests, repo public, dashboard hosted
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
 **Last Updated:** 2026-03-21
@@ -33,7 +33,7 @@ What's needed: a protocol-level reputation system where trust is earned through 
 
 ### Event Kind
 
-Use **kind 30385** (replaceable parameterized event) for reputation attestations.
+Use **kind 30386** (replaceable parameterized event) for reputation attestations.
 
 The `d` tag identifies the subject being attested:
 ```json
@@ -46,7 +46,7 @@ The `d` tag identifies the subject being attested:
 
 ```json
 {
-  "kind": 30385,
+  "kind": 30386,
   "pubkey": "<attester_nostr_pubkey>",
   "created_at": <unix_timestamp>,
   "tags": [
@@ -167,7 +167,7 @@ The `k` tag indicates which event kind this handler can process (kind `30078` fo
   "kind": 31990,
   "tags": [
     ["d", "<service_identifier>"],
-    ["k", "30385"],
+    ["k", "30386"],
     ["description", "Bitcoin network data API"],
     ["price", "10", "sats", "per-request"],
     ["protocol", "L402"],
@@ -188,7 +188,7 @@ The `k` tag indicates which event kind this handler can process (kind `30078` fo
 
 To query an agent's reputation:
 
-1. Subscribe to kind 30385 events with `#p` filter for the subject pubkey
+1. Subscribe to kind 30386 events with `#p` filter for the subject pubkey
 2. Collect attestations from multiple attesters
 3. Apply decay weighting based on age and half-life
 4. Weight by attestation type (bilateral > observer > self)
@@ -450,6 +450,18 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Synced NIP.md** with NIP-XX.md (was stale with old kind 30078 references)
 - [x] **461 tests still pass** — zero failures
 
+### v0.9.3 (2026-03-23) — Kind 30385 → 30386 (NIP-85 collision)
+- [x] **CRITICAL FIX: Kind 30385 also taken** — NIP-85 "Trusted Assertions" uses kinds 30382-30385 (30385 = NIP-73 identifier assertions). Discovered by reading the actual NIP-85 spec
+- [x] **Migrated to kind 30386** — First free kind after the NIP-85 block (30382-30385) and before Corny Chat (30388)
+- [x] **Refactored legacy kind handling** — replaced individual LEGACY_ATTESTATION_KIND exports with single `LEGACY_KINDS = [30385, 30388, 30078]` array. Cleaner, extensible
+- [x] **Updated all source files, NIP-XX.md, dashboards, server port (→3386)**
+- [x] **Fixed all broken imports** — discover.js, validate.js, test-decay.js, test-validate.js all updated to use `LEGACY_KINDS` array
+- [x] **Re-published kind 30386 events to all 4 relays:**
+  - Self-attestation: `16eebfa599a7167e0a522cdbc945023c6211e3c82de98208792363629b68a06a`
+  - Handler (31990): `6bcba0b8c252d77eb51894d4ed5af62da52f7036913b64332451f1645657b522`
+  - Observer (ACINQ): `3ff2fef035a8ed17b9051564f3afbfd4e201e33ad1a8966e8aabaae4275b1121`
+- [x] **461 tests pass** — zero failures after migration
+
 ### TODO (Consolidated)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips)
@@ -457,5 +469,5 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [ ] Community feedback: share in Nostr dev channels, Lightning dev Telegram/Discord, Moltbook
 - [x] Host dashboard publicly (GitHub Pages) — pending Levi enabling Pages in repo settings
 - [x] Service discovery module (discover.js) — complete with 43 tests
-- [x] Re-publish observer attestations with kind 30385 — done (ACINQ + our node)
-- [x] Backwards-compatible querying for legacy kinds 30388 and 30078 — done
+- [x] Re-publish all attestations with kind 30386 — done
+- [x] Backwards-compatible querying for all legacy kinds (30385, 30388, 30078) — done

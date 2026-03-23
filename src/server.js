@@ -14,10 +14,10 @@
  *   GET  /                             — API documentation
  * 
  * Usage:
- *   node src/server.js [--port 3385] [--relays relay1,relay2]
+ *   node src/server.js [--port 3386] [--relays relay1,relay2]
  *   
  * Environment:
- *   PORT=3385                          — Server port (default: 3385)
+ *   PORT=3386                          — Server port (default: 3385)
  *   RELAYS=wss://relay1,wss://relay2   — Comma-separated relay URLs
  * 
  * @module server
@@ -33,7 +33,7 @@ import { ATTESTATION_KIND, HANDLER_KIND } from './constants.js';
 
 // --- Configuration ---
 
-const DEFAULT_PORT = 3385; // 3-385 → kind 30385
+const DEFAULT_PORT = 3386; // 3-386 → kind 30386
 const MAX_BODY_SIZE = 64 * 1024; // 64KB max POST body
 const QUERY_TIMEOUT_MS = parseInt(process.env.QUERY_TIMEOUT_MS, 10) || 15000;
 const CACHE_TTL_MS = 60000; // 1 minute cache for reputation queries

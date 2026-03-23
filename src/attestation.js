@@ -1,10 +1,10 @@
 /**
  * Attestation builder and publisher for NIP Agent Reputation.
  * 
- * Builds kind 30385 events from collected metrics and publishes
+ * Builds kind 30386 events from collected metrics and publishes
  * them to Nostr relays.
  * 
- * Kind 30385 is the proposed dedicated kind per NIP-XX.
+ * Kind 30386 is the proposed dedicated kind per NIP-XX.
  * Legacy kind 30078 is queried for backwards compatibility.
  */
 
@@ -12,7 +12,7 @@ import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
 import { SimplePool } from 'nostr-tools/pool';
 import { useWebSocketImplementation } from 'nostr-tools/pool';
 import WebSocket from 'ws';
-import { ATTESTATION_KIND, LEGACY_ATTESTATION_KIND, LEGACY_ATTESTATION_KIND_2 } from './constants.js';
+import { ATTESTATION_KIND, LEGACY_KINDS } from './constants.js';
 
 // Polyfill WebSocket for Node.js
 useWebSocketImplementation(WebSocket);
@@ -41,7 +41,7 @@ const MIN_SAMPLE_SIZES = {
 };
 
 /**
- * Build a kind 30385 self-attestation event from LND metrics.
+ * Build a kind 30386 self-attestation event from LND metrics.
  */
 export function buildSelfAttestation(metrics, secretKey, opts = {}) {
   const serviceType = opts.serviceType || 'lightning-node';
@@ -133,8 +133,8 @@ export async function queryAttestations(subjectPubkey, relays = DEFAULT_RELAYS, 
   const pool = new SimplePool();
   const serviceType = opts.serviceType || null;
   
-  // Query current kind (30385) and legacy kinds (30388, 30078) for backwards compatibility
-  const baseFilter = { kinds: [ATTESTATION_KIND, LEGACY_ATTESTATION_KIND_2, LEGACY_ATTESTATION_KIND] };
+  // Query current kind and all legacy kinds for backwards compatibility
+  const baseFilter = { kinds: [ATTESTATION_KIND, ...LEGACY_KINDS] };
   if (opts.since) baseFilter.since = opts.since;
   if (opts.limit) baseFilter.limit = opts.limit;
   
@@ -189,7 +189,7 @@ export async function queryAttestations(subjectPubkey, relays = DEFAULT_RELAYS, 
 }
 
 /**
- * Parse a kind 30385 (or legacy 30078) event into a structured attestation object.
+ * Parse a kind 30386 (or legacy 30078) event into a structured attestation object.
  */
 export function parseAttestation(event) {
   const tags = event.tags || [];

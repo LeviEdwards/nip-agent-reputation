@@ -1,6 +1,6 @@
 # Agent Reputation Dashboard
 
-A browser-based dashboard for querying and visualizing NIP-XX (kind 30385) agent reputation attestations from Nostr relays.
+A browser-based dashboard for querying and visualizing NIP-XX (kind 30386) agent reputation attestations from Nostr relays.
 
 ## Features
 
@@ -37,7 +37,7 @@ The dashboard includes preset buttons for:
 
 1. Parses input (npub → hex, validates format)
 2. Opens WebSocket connections to relay.damus.io, nos.lol, relay.primal.net, relay.snort.social
-3. Sends REQ for kind 30385 + legacy 30078 events matching the pubkey
+3. Sends REQ for kind 30386 + legacy 30078 events matching the pubkey
 4. Deduplicates events across relays
 5. Parses dimensions, computes decay weights, applies type weights
 6. Renders aggregated summary + individual attestation cards

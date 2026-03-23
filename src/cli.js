@@ -144,7 +144,7 @@ Validation:
   node src/cli.js validate --query <pubkey>        Fetch & validate all attestations for a pubkey
 
 HTTP API Server:
-  node src/cli.js serve                            Start reputation API server (default port 3385)
+  node src/cli.js serve                            Start reputation API server (default port 3386)
   node src/cli.js serve --port <n>                 Start on custom port
   node src/cli.js serve --relays <url1,url2>       Use custom relay list
 `);

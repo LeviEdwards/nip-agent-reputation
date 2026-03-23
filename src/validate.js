@@ -1,7 +1,7 @@
 /**
  * Validation module for NIP Agent Reputation attestation events.
  * 
- * Validates that attestation events (kind 30385/30078) conform to the spec
+ * Validates that attestation events (kind 30386/30078) conform to the spec
  * before they're processed by the aggregation pipeline. Returns structured
  * validation results with severity levels (error/warning/info).
  * 
@@ -11,7 +11,7 @@
  *   if (!result.valid) console.error(result.errors);
  */
 
-import { ATTESTATION_KIND, LEGACY_ATTESTATION_KIND, HANDLER_KIND } from './constants.js';
+import { ATTESTATION_KIND, LEGACY_KINDS, HANDLER_KIND } from './constants.js';
 
 // Known attestation types and their expected weights
 const VALID_ATTESTATION_TYPES = ['self', 'bilateral', 'observer'];
@@ -102,7 +102,7 @@ function getTag(tags, name) {
 }
 
 /**
- * Validate a kind 30385 (or legacy 30078) attestation event.
+ * Validate a kind 30386 (or legacy 30078) attestation event.
  * 
  * @param {Object} event - Raw Nostr event object
  * @param {Object} opts - Validation options
@@ -125,12 +125,12 @@ export function validateAttestation(event, opts = {}) {
   }
 
   // Kind check
-  if (event.kind !== ATTESTATION_KIND && event.kind !== LEGACY_ATTESTATION_KIND) {
-    result.error('WRONG_KIND', `Expected kind ${ATTESTATION_KIND} or ${LEGACY_ATTESTATION_KIND}, got ${event.kind}`);
+  if (event.kind !== ATTESTATION_KIND && !LEGACY_KINDS.includes(event.kind)) {
+    result.error('WRONG_KIND', `Expected kind ${ATTESTATION_KIND} or legacy kind, , got ${event.kind}`);
   }
 
-  if (event.kind === LEGACY_ATTESTATION_KIND) {
-    result.note('LEGACY_KIND', `Using legacy kind ${LEGACY_ATTESTATION_KIND}; should migrate to ${ATTESTATION_KIND}`);
+  if (LEGACY_KINDS.includes(event.kind)) {
+    result.note('LEGACY_KIND', `Using legacy kind ${event.kind}; should migrate to ${ATTESTATION_KIND}`);
   }
 
   // Pubkey (attester)
@@ -389,7 +389,7 @@ export function validateHandler(event, opts = {}) {
   const kTag = getTag(tags, 'k');
   if (!kTag) {
     result.warn('MISSING_K_TAG', 'Missing k tag (NIP-89 handler kind reference)');
-  } else if (kTag !== String(ATTESTATION_KIND) && kTag !== String(LEGACY_ATTESTATION_KIND)) {
+  } else if (kTag !== String(ATTESTATION_KIND) && !LEGACY_KINDS.map(String).includes(kTag)) {
     result.note('NONSTANDARD_K', `k tag references kind ${kTag}; expected ${ATTESTATION_KIND}`);
   }
 

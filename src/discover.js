@@ -6,7 +6,7 @@
  * to produce enriched service listings.
  */
 
-import { ATTESTATION_KIND, HANDLER_KIND, LEGACY_ATTESTATION_KIND } from './constants.js';
+import { ATTESTATION_KIND, HANDLER_KIND, LEGACY_KINDS } from './constants.js';
 
 /**
  * @typedef {object} DiscoveredService
@@ -152,7 +152,7 @@ async function enrichWithReputation(pool, relays, services) {
   for (const pubkey of pubkeys) {
     try {
       const filter = {
-        kinds: [ATTESTATION_KIND, LEGACY_ATTESTATION_KIND],
+        kinds: [ATTESTATION_KIND, ...LEGACY_KINDS],
         '#p': [pubkey],
       };
       const events = await pool.querySync(relays, filter);

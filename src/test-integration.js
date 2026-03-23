@@ -6,8 +6,8 @@
  * Tests the complete cycle:
  *   1. Declare service handler (kind 31990)
  *   2. Record transactions
- *   3. Build bilateral attestation (kind 30385)
- *   4. Build self-attestation (kind 30385)
+ *   3. Build bilateral attestation (kind 30386)
+ *   4. Build self-attestation (kind 30386)
  *   5. Parse all events back
  *   6. Aggregate attestations with decay weighting
  *   7. Validate edge cases (self-only, stale services)

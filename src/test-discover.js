@@ -41,7 +41,7 @@ function makeHandlerEvent(pubkey, serviceId, opts = {}) {
   const now = Math.floor(Date.now() / 1000);
   const tags = [
     ['d', serviceId],
-    ['k', String(opts.kTag || 30385)],
+    ['k', String(opts.kTag || 30386)],
     ['description', opts.description || `Service: ${serviceId}`],
     ['L', 'agent-reputation'],
     ['l', 'handler', 'agent-reputation'],
