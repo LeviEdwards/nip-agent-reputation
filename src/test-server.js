@@ -8,6 +8,9 @@ import http from 'node:http';
 import { createServer } from './server.js';
 import { ATTESTATION_KIND, HANDLER_KIND } from './constants.js';
 
+// Use short timeout for tests to avoid hanging on relay connections
+process.env.QUERY_TIMEOUT_MS = '3000';
+
 let server, port;
 let passed = 0;
 let failed = 0;

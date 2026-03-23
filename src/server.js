@@ -35,7 +35,7 @@ import { ATTESTATION_KIND, HANDLER_KIND } from './constants.js';
 
 const DEFAULT_PORT = 3388; // 3-388 → kind 30388
 const MAX_BODY_SIZE = 64 * 1024; // 64KB max POST body
-const QUERY_TIMEOUT_MS = 15000;
+const QUERY_TIMEOUT_MS = parseInt(process.env.QUERY_TIMEOUT_MS, 10) || 15000;
 const CACHE_TTL_MS = 60000; // 1 minute cache for reputation queries
 
 // --- Simple in-memory cache ---
@@ -360,7 +360,7 @@ function handleDocs() {
 // --- Main server ---
 
 export function createServer(options = {}) {
-  const port = options.port || parseInt(process.env.PORT, 10) || DEFAULT_PORT;
+  const port = options.port !== undefined ? options.port : (parseInt(process.env.PORT, 10) || DEFAULT_PORT);
   const relayUrls = options.relays || (process.env.RELAYS ? process.env.RELAYS.split(',') : DEFAULT_RELAYS);
 
   const server = http.createServer(async (req, res) => {
