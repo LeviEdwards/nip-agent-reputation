@@ -469,6 +469,21 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Verified dispatch server is healthy** — HTTP 200 from dispatches.mystere.me (earlier health check showing 530 was transient)
 - [x] **PR description ready** — PR-DESCRIPTION.md in repo for NIP submission to nostr/nips
 
+### v0.9.5 (2026-03-23) — Fresh self-attestation, relay verification
+- [x] **Published fresh kind 30386 self-attestation** with current LND metrics (2 active channels, 1.4M total capacity, 99.5% uptime)
+  - Event ID: `e7bc3b3f623f072fbbb819c6af9cabbacebf3534cf73eea50673f942a3471a97`
+  - Confirmed on damus, nos.lol, primal — query-back verified
+- [x] **Full relay inventory verified** — 4 current events on relays:
+  - Kind 30386 self-attestation (0h old) ✅
+  - Kind 30386 observer for ACINQ (9h old) ✅
+  - Kind 31990 handler declaration (9h old) ✅
+  - Kind 31990 legacy handler (72h old, different d-tag, will age out)
+- [x] **Proper user-facing README.md** — replaced 400-line build log with clean docs: install, quick start, programmatic usage, module table
+- [x] **Version bumped to 0.9.4** in package.json
+- [x] **All 461 tests pass**
+- [x] **Moltbook engagement** — responded to onboarding question on builds post (3 comments total), x402 thread at 12 comments
+- [ ] **Bug found**: observeNodeFromGraph returns 0 channels for ACINQ despite graph data being available (graph/node endpoint shows 1980 channels). Not critical — self-attestation works fine
+
 ### TODO (Consolidated)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips)
