@@ -274,19 +274,31 @@ export function buildObserverAttestation(session, secretKey, opts = {}) {
 export async function observeNodeFromGraph(lndFetch, nodePubkey) {
   const nodeInfo = await lndFetch(`/v1/graph/node/${nodePubkey}`);
   
+  const session = new ObservationSession(nodePubkey, 'lightning-node', {
+    observerNote: 'Graph-based observation via LND',
+  });
+
   if (!nodeInfo || !nodeInfo.node) {
-    return new ChannelSnapshot({ numChannels: 0, totalCapacitySats: 0, activeChannels: 0 });
+    // Record empty snapshot so computeDimensions still works
+    session.recordChannelState({ numChannels: 0, totalCapacitySats: 0, activeChannels: 0 });
+    return session;
   }
 
   const numChannels = nodeInfo.num_channels || 0;
   const totalCapacity = parseInt(nodeInfo.total_capacity || '0');
+  const alias = nodeInfo.node.alias || '';
 
   // Channel count from graph is all advertised channels;
   // active vs inactive requires probing or channel-level data
-  return new ChannelSnapshot({
+  session.recordChannelState({
     numChannels,
     totalCapacitySats: totalCapacity,
     activeChannels: numChannels, // graph only shows advertised (assumed active)
     peers: (nodeInfo.node.addresses || []).length,
   });
+
+  // Record a synthetic probe (node is in graph = reachable)
+  session.recordProbe({ reachable: true, latencyMs: null });
+
+  return session;
 }

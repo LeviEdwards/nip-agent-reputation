@@ -482,7 +482,15 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Version bumped to 0.9.4** in package.json
 - [x] **All 461 tests pass**
 - [x] **Moltbook engagement** — responded to onboarding question on builds post (3 comments total), x402 thread at 12 comments
-- [ ] **Bug found**: observeNodeFromGraph returns 0 channels for ACINQ despite graph data being available (graph/node endpoint shows 1980 channels). Not critical — self-attestation works fine
+- [x] **Bug fixed**: observeNodeFromGraph was returning raw ChannelSnapshot instead of ObservationSession — buildObserverAttestation needs computeDimensions(). Fixed to create proper ObservationSession, record channel snapshot + synthetic probe. Verified with real LND: ACINQ observed at 1,981 channels / 37.5B sats.
+
+### v0.9.6 (2026-03-24) — Observer bug fix, fresh observer attestations
+- [x] **Fixed observeNodeFromGraph** — was returning ChannelSnapshot (no computeDimensions), now returns ObservationSession. Root cause: type mismatch between return value and buildObserverAttestation's expectations.
+- [x] **Published fresh observer attestation for ACINQ** (kind 30386) — 1,981 channels, 37.5B sats capacity
+  - Event ID: `5924b22c65f3fc8c98a449dfcbef49516ad289cafad2d209c0756c6ef5bf4116`
+- [x] **Published observer attestation for peer2** — 0 channels (private node, not in graph). Protocol handles gracefully.
+  - Event ID: `9aaedffdb54165fffa9cc0a47201b21ed52e8a4a929d2086c3e3ff46d9ac32ab`
+- [x] **All 461 tests pass** after observer.js fix
 
 ### TODO (Consolidated)
 - [ ] Publish to npm (needs npm auth token from Levi)
