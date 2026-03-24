@@ -291,6 +291,18 @@ Attestations are timestamped and use replaceable events. The decay mechanism nat
 - Aggregate attestations (weekly summaries) reduce relationship graph exposure
 - Participation is voluntary — no requirement to attest
 
+## Implementation
+
+A reference implementation (Node.js) is available at [github.com/LeviEdwards/nip-agent-reputation](https://github.com/LeviEdwards/nip-agent-reputation). It includes:
+
+- CLI for collecting metrics, publishing attestations, and querying reputation
+- Self, bilateral, and observer attestation builders
+- Exponential decay and weighted aggregation
+- Web-of-trust recursive scoring
+- Service discovery via NIP-89
+- Validation suite (461 tests)
+- HTTP API server
+
 ## Related NIPs
 
 - [NIP-01](01.md) — Basic protocol (event structure, replaceable events)

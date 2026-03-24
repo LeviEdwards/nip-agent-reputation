@@ -492,6 +492,13 @@ A service may become inactive without explicit removal. Queriers detect this via
   - Event ID: `9aaedffdb54165fffa9cc0a47201b21ed52e8a4a929d2086c3e3ff46d9ac32ab`
 - [x] **All 461 tests pass** after observer.js fix
 
+### v0.9.7 (2026-03-24) — Examples, CLI version fix, NIP-XX polish
+- [x] **CLI version bumped to v0.9.6** — was stuck at v0.6 in help output
+- [x] **Added examples/** — `query-reputation.js` (no LND needed, queries from relays) and `observe-and-attest.js` (observe a node via LND graph + publish). Both tested end-to-end with real relay data.
+- [x] **NIP-XX.md polished** — added Implementation section with reference to repo, confirmed format matches nostr/nips conventions (NIP-85 as model). Kind 30386 confirmed available in event kinds table (gap between 30384 and 30388).
+- [x] **Full CLI end-to-end verified**: collect, query, discover --reputation all work with live data. Decay weights visible in real-time (6h=0.994, 105h=0.904). Aggregation across self+observer attestations correct.
+- [x] **All 461 tests pass**
+
 ### TODO (Consolidated)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips)
