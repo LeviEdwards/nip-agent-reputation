@@ -499,6 +499,14 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Full CLI end-to-end verified**: collect, query, discover --reputation all work with live data. Decay weights visible in real-time (6h=0.994, 105h=0.904). Aggregation across self+observer attestations correct.
 - [x] **All 461 tests pass**
 
+### v0.9.8 (2026-03-24) — Export fix, version bump, fresh attestation
+- [x] **Fixed broken index.js export** — was exporting `LEGACY_ATTESTATION_KIND` (deleted constant), now correctly exports `LEGACY_KINDS`. Would have caused runtime error on `import('nip-agent-reputation')`.
+- [x] **package.json version bumped to 0.9.7** (was stuck at 0.9.4)
+- [x] **README.md code example fixed** — dimensions iteration used wrong destructuring syntax (array vs object)
+- [x] **All 12 subpath exports verified** — every module loads cleanly, 38 total exports from index.js
+- [x] **Fresh self-attestation published** to all 4 relays (event: `3a2393d5cc63f08cbb733b081ffb06c23c0724ffd3bd96b2ceb21c9b765337e0`)
+- [x] **All 461 tests pass**
+
 ### TODO (Consolidated)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips)

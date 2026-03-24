@@ -105,8 +105,8 @@ const attestations = await queryAttestations(
 
 for (const a of attestations) {
   console.log(`${a.attestationType} from ${a.attester.slice(0, 16)}...`);
-  for (const [name, value, sampleSize] of a.dimensions) {
-    console.log(`  ${name}: ${value} (n=${sampleSize})`);
+  for (const d of a.dimensions) {
+    console.log(`  ${d.name}: ${d.value} (n=${d.sampleSize})`);
   }
 }
 ```

@@ -9,7 +9,7 @@
  */
 
 // Constants
-export { ATTESTATION_KIND, HANDLER_KIND, LEGACY_ATTESTATION_KIND } from './src/constants.js';
+export { ATTESTATION_KIND, HANDLER_KIND, LEGACY_KINDS } from './src/constants.js';
 
 // Core attestation building, publishing, and querying
 export {
