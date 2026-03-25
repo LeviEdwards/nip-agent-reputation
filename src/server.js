@@ -169,20 +169,25 @@ async function handleReputation(pubkey, params, relays) {
       wotScore = null; // WoT scoring failed, continue without it
     }
 
+    // aggregateAttestations returns flat: { dimName: { weightedAvg, numAttesters, totalWeight, belowMinSample }, ... }
+    // Compute overall totalWeight as max across dimensions
+    const dimValues = Object.values(aggregated);
+    const totalWeight = dimValues.length > 0
+      ? Math.max(...dimValues.map(d => d.totalWeight || 0))
+      : 0;
+
     // Determine trust level
     let trustLevel = 'none';
-    const totalWeight = aggregated.totalWeight || 0;
     if (totalWeight >= 1.0) trustLevel = 'verified';
     else if (totalWeight >= 0.5) trustLevel = 'moderate';
     else if (totalWeight > 0) trustLevel = 'low';
 
     // Check if all self-attested
     const allSelf = parsed.every(p => p.attestationType === 'self');
-
     const result = {
       pubkey: queryPubkey,
       attestationCount: attestations.length,
-      dimensions: aggregated.dimensions || {},
+      dimensions: aggregated,
       totalWeight,
       trustLevel,
       selfOnly: allSelf,
@@ -431,7 +436,7 @@ export function createServer(options = {}) {
 
 // --- CLI entrypoint ---
 
-if (process.argv[1]?.endsWith('server.js')) {
+if (process.argv[1]?.match(/(?:^|[/\\])server\.js$/)) {
   const args = process.argv.slice(2);
   const options = {};
 

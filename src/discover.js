@@ -7,6 +7,7 @@
  */
 
 import { ATTESTATION_KIND, HANDLER_KIND, LEGACY_KINDS } from './constants.js';
+import { SimplePool } from 'nostr-tools/pool';
 
 /**
  * @typedef {object} DiscoveredService
@@ -38,7 +39,22 @@ import { ATTESTATION_KIND, HANDLER_KIND, LEGACY_KINDS } from './constants.js';
  * @param {number} [opts.minTrustWeight] - Minimum trust weight to include
  * @returns {Promise<DiscoveredService[]>}
  */
-export async function discoverServices(pool, relays, opts = {}) {
+export async function discoverServices(poolOrRelays, relaysOrOpts, opts = {}) {
+  // Support both signatures:
+  //   discoverServices(pool, relays, opts)  — original
+  //   discoverServices(relays, opts)        — server.js style (no pool passed)
+  let pool, relays;
+  if (Array.isArray(poolOrRelays)) {
+    // Called as discoverServices(relays, opts)
+    relays = poolOrRelays;
+    opts = relaysOrOpts || {};
+    pool = new SimplePool();
+  } else {
+    // Called as discoverServices(pool, relays, opts)
+    pool = poolOrRelays;
+    relays = relaysOrOpts;
+  }
+
   const {
     serviceType,
     protocol,

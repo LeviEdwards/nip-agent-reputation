@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.10] - 2026-03-25
+
+### Fixed
+- **Server dimensions bug** — `aggregateAttestations()` returns a flat object `{ dimName: { weightedAvg, numAttesters, ... } }`, but server.js was accessing `aggregated.dimensions` (undefined). Now uses the aggregated object directly. This was causing all reputation queries to return `dimensions: {}`.
+- **Server totalWeight calculation** — Was reading `aggregated.totalWeight` (undefined, always 0). Now computes max totalWeight across all dimensions, giving correct trust level classification.
+- **Discover pool bug** — `discoverServices(relays, opts)` called from server.js was passing relays as the pool argument. Function now auto-detects signature: `(pool, relays, opts)` or `(relays, opts)` and creates its own SimplePool when none is provided.
+- **Server test port conflict** — CLI entrypoint guard `process.argv[1]?.endsWith('server.js')` matched `test-server.js`. Fixed with regex `/(?:^|[/\\])server\.js$/` for exact match only.
+
+### Added
+- **Public reputation API proxy** — dispatches.mystere.me now proxies `/api/reputation/*` routes to the reputation server. Endpoints: GET `/api/reputation/<pubkey>`, GET `/api/reputation/discover`, POST `/api/reputation/validate`, GET `/api/reputation/health`.
+
+## [0.9.9] - 2026-03-25
+
+### Fixed
+- Server double-parse bug, WebOfTrust async bug, compact dimension tag parser
+- See README for full v0.9.9 notes
+
 ## [0.9.8] - 2026-03-24
 
 ### Fixed
