@@ -154,18 +154,20 @@ async function handleReputation(pubkey, params, relays) {
       return { status: 200, data: result };
     }
 
-    // Parse attestations
-    const parsed = attestations.map(e => parseAttestation(e));
+    // queryAttestations() already returns parsed objects
+    const parsed = attestations;
     
     // Aggregate
     const aggregated = aggregateAttestations(parsed);
 
     // Web-of-trust analysis
     const wot = new WebOfTrust();
-    parsed.forEach(p => {
-      if (p.raw) wot.addAttestation(p.raw);
-    });
-    const wotScore = wot.score(queryPubkey);
+    let wotScore;
+    try {
+      wotScore = await wot.score(queryPubkey);
+    } catch (e) {
+      wotScore = null; // WoT scoring failed, continue without it
+    }
 
     // Determine trust level
     let trustLevel = 'none';
@@ -186,8 +188,8 @@ async function handleReputation(pubkey, params, relays) {
       selfOnly: allSelf,
       wotScore: wotScore || null,
       attesters: [...new Set(parsed.map(p => p.attester).filter(Boolean))],
-      latestAttestation: attestations.reduce((max, e) => 
-        e.created_at > max ? e.created_at : max, 0),
+      latestAttestation: parsed.reduce((max, e) => 
+        (e.createdAt || 0) > max ? (e.createdAt || 0) : max, 0),
       queriedAt: Math.floor(Date.now() / 1000),
     };
 

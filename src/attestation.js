@@ -201,11 +201,22 @@ export function parseAttestation(event) {
   
   const dimensions = tags
     .filter(t => t[0] === 'dimension')
-    .map(t => ({
-      name: t[1],
-      value: parseFloat(t[2]),
-      sampleSize: parseInt(t[3] || '0'),
-    }));
+    .map(t => {
+      // Handle both proper format ["dimension","name","value","sample"]
+      // and comma-concatenated ["dimension","name,value,sample"] (external implementers)
+      if (t.length >= 4) {
+        return { name: t[1], value: parseFloat(t[2]), sampleSize: parseInt(t[3] || '0') };
+      }
+      if (t.length === 2 && typeof t[1] === 'string' && t[1].includes(',')) {
+        const parts = t[1].split(',');
+        return {
+          name: parts[0],
+          value: parseFloat(parts[1]),
+          sampleSize: parseInt(parts[2] || '0'),
+        };
+      }
+      return { name: t[1], value: NaN, sampleSize: 0 };
+    });
   
   const ageHours = (Date.now() / 1000 - event.created_at) / 3600;
   const halfLife = parseFloat(getTag('half_life_hours') || '720');

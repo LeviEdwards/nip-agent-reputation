@@ -8,6 +8,8 @@ Agent Reputation Attestations
 
 This NIP defines a standard for publishing, querying, and verifying reputation attestations for autonomous agents operating on the Lightning Network. Reputation is derived from observable economic behavior — payment settlements, service delivery, uptime — rather than social signals or self-reported claims.
 
+The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+
 ## Motivation
 
 Autonomous agents transacting over Lightning have no standard way to evaluate counterparty trustworthiness before payment. Social signals (followers, zaps) don't correlate with service quality. Directories list services without quality data. Most agent-to-agent transactions happen blind.
@@ -34,8 +36,10 @@ This NIP defines one new event kind:
 Kind `30386` is a [replaceable parameterized event](01.md). The `d` tag identifies the subject:
 
 ```
-["d", "<subject_pubkey>:<service_type>"]
+["d", "<subject_identifier>:<service_type>"]
 ```
+
+The `subject_identifier` is typically a Lightning node pubkey (66-character hex, compressed secp256k1) but MAY be any stable public identifier for the subject.
 
 Service handler declarations reuse [NIP-89](89.md) kind `31990`.
 
@@ -60,6 +64,30 @@ Service handler declarations reuse [NIP-89](89.md) kind `31990`.
     ["l", "attestation", "agent-reputation"]
   ],
   "content": "<optional free-text context>"
+}
+```
+
+Example of an observer attesting a Lightning node's uptime and capacity:
+
+```jsonc
+{
+  "kind": 30386,
+  "pubkey": "1bb7ae47020335130b9654e3c13633f92446c4717e859f82b46e6363118c6ead",
+  "created_at": 1711324800,
+  "tags": [
+    ["d", "03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f:lightning-node"],
+    ["p", "e88a691e98d9987c964521dff60025f60700378a4879180dcbbb4a5027850411"],
+    ["node_pubkey", "03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f"],
+    ["service_type", "lightning-node"],
+    ["attestation_type", "observer"],
+    ["dimension", "uptime_percent", "99.8", "30"],
+    ["dimension", "capacity_sats", "5000000000", "1981"],
+    ["half_life_hours", "2160"],
+    ["sample_window_hours", "720"],
+    ["L", "agent-reputation"],
+    ["l", "attestation", "agent-reputation"]
+  ],
+  "content": "Observed via Lightning graph: 1981 channels, 50 BTC capacity"
 }
 ```
 
@@ -123,19 +151,19 @@ Queriers SHOULD discount dimensions below minimum sample size. A `sample_size` o
 
 ### Attestation Types
 
-| Type | Recommended Weight | Description |
-| ---- | ------------------ | ----------- |
-| `self` | 0.3 | Agent reporting its own metrics |
-| `observer` | 0.7 | Third-party monitoring without direct transaction |
-| `bilateral` | 1.0 | Counterparty attesting after direct transaction |
+| Type | Description |
+| ---- | ----------- |
+| `self` | Agent reporting its own metrics |
+| `observer` | Third-party monitoring without direct transaction |
+| `bilateral` | Counterparty attesting after direct transaction |
 
-These weights are recommendations. Queriers MAY apply their own weighting scheme.
+Implementations MUST accept all three types. The intended trust ordering is `bilateral` > `observer` > `self`, but queriers MAY apply their own weighting scheme.
 
-**Self** attestations carry lowest weight because self-reported data is unverifiable. They are useful as a baseline signal and for cold-start bootstrapping.
+**Self** attestations are useful as a baseline signal and for cold-start bootstrapping. Self-reported data is unverifiable and SHOULD carry less weight.
 
 **Observer** attestations come from third parties who monitor an agent (e.g., by querying the Lightning network graph) without transacting directly. They provide independent signal but lack proof of direct economic interaction.
 
-**Bilateral** attestations carry highest weight because they represent direct transactional experience. The attester has economic skin in the game.
+**Bilateral** attestations represent direct transactional experience. The attester has economic skin in the game. They SHOULD carry the most weight.
 
 ### Decay Mechanism
 
@@ -223,25 +251,18 @@ To query an agent's reputation:
 
 ### Aggregation
 
-For each dimension, compute the weighted average across all attestations:
+For each dimension, queriers SHOULD compute a weighted average across all attestations:
 
 ```
 effective_weight = decay_weight × type_weight
 weighted_value = Σ(value_i × effective_weight_i) / Σ(effective_weight_i)
 ```
 
-Where `decay_weight` is the exponential decay from the attestation's age and `type_weight` is from the attestation type (0.3 / 0.7 / 1.0).
+Where `decay_weight` is the exponential decay from the attestation's age and `type_weight` reflects the attestation type's trust level. Specific weight values are left to implementations.
 
 ### Self-Only Attestations
 
-When all attestations for a subject are type `self`:
-
-- `totalWeight` will be ≤ 0.3 (since self type weight is 0.3)
-- Queriers SHOULD treat `totalWeight < 0.5` as low confidence — no external validation exists
-- Recommended confidence thresholds:
-  - `totalWeight >= 1.0` — sufficient for automated decisions
-  - `0.5 <= totalWeight < 1.0` — moderate, may require additional signals
-  - `totalWeight < 0.5` — low, self-reported only, treat as unverified
+When all attestations for a subject are type `self`, no external validation exists. Queriers SHOULD indicate low confidence and MAY require additional signals before automated decisions.
 
 ### Stale Service Detection
 

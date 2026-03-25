@@ -1,6 +1,6 @@
 {
   "name": "nip-agent-reputation",
-  "version": "0.9.7",
+  "version": "0.9.9",
   "type": "module",
   "description": "Nostr protocol for agent reputation attestations on Lightning Network — reference implementation of NIP-XX",
   "main": "index.js",

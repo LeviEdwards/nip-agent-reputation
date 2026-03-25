@@ -99,7 +99,7 @@ async function main() {
     case 'serve':
       return cmdServe();
     default:
-      console.log(`NIP Agent Reputation — Reference Implementation v0.9.6
+      console.log(`NIP Agent Reputation — Reference Implementation v0.9.9
 
 Usage:
   node src/cli.js collect              Gather LND metrics (dry run)
