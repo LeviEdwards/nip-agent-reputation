@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "description": "NIP-30386 Endpoint Monitoring Registry",
+  "updatedAt": "2026-03-26T17:12:09.350Z",
+  "endpoints": [
+    {
+      "url": "https://utilshed.com",
+      "subjectPubkey": "c82ba63605e4f94647322ab7f26a4bad25c88fe27f87ed8706ca4082e900c158",
+      "subjectNostrPubkey": "c82ba63605e4f94647322ab7f26a4bad25c88fe27f87ed8706ca4082e900c158",
+      "serviceType": "http-endpoint",
+      "probeCount": 5,
+      "enabled": true,
+      "label": "UtilShed (karl_bott)",
+      "tier": "free",
+      "addedAt": "2026-03-25"
+    },
+    {
+      "url": "https://dispatches.mystere.me",
+      "subjectPubkey": "1bb7ae47020335130b9654e3c13633f92446c4717e859f82b46e6363118c6ead",
+      "subjectNostrPubkey": "1bb7ae47020335130b9654e3c13633f92446c4717e859f82b46e6363118c6ead",
+      "serviceType": "http-endpoint",
+      "probeCount": 5,
+      "enabled": true,
+      "label": "Dispatches (self-monitor)",
+      "tier": "self",
+      "addedAt": "2026-03-25"
+    }
+  ]
+}

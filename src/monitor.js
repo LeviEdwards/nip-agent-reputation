@@ -40,7 +40,7 @@ const LOG_DIR = join(__dirname, '..', 'data', 'monitor-logs');
  * Probe a single HTTP endpoint multiple times.
  * Returns array of probe results.
  */
-async function probeEndpoint(url, count = 5, delayMs = 2000) {
+export async function probeEndpoint(url, count = 5, delayMs = 2000) {
   const results = [];
   
   for (let i = 0; i < count; i++) {
@@ -86,7 +86,7 @@ async function probeEndpoint(url, count = 5, delayMs = 2000) {
  * Check security headers for an endpoint.
  * Returns object with header presence info.
  */
-async function checkSecurityHeaders(url) {
+export async function checkSecurityHeaders(url) {
   const SECURITY_HEADERS = [
     'strict-transport-security',
     'content-security-policy',

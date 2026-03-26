@@ -89,3 +89,16 @@ export {
 export {
   collectLndMetrics,
 } from './src/lnd.js';
+
+// Monitoring & fulfillment
+export {
+  probeEndpoint,
+  checkSecurityHeaders,
+  runMonitoringCycle,
+  initRegistry,
+} from './src/monitor.js';
+
+export {
+  fulfillOrder,
+  scanAndFulfill,
+} from './src/fulfill.js';

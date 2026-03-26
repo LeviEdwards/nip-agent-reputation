@@ -4,3 +4,7 @@ package-lock.json
 .tx-history.json
 .auto-publish-state.json
 *.log
+data/monitor-logs/
+data/fulfillment-log.json
+data/pending-orders/
+data/test-fulfill/

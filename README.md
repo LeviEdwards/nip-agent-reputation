@@ -566,11 +566,25 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **All endpoints verified**: Main (200), Attest (200), Ask (200), Reputation API (200). Test order created + cleaned.
 - [x] **karl_bott notified**: DM sent confirming deal terms + announcing page build.
 
+### v1.0.2 (2026-03-26) — Automated monitoring pipeline + fulfillment system
+
+- [x] **Fulfillment module built** (`src/fulfill.js`, 9.3KB): `fulfillOrder()` — probes endpoint, publishes kind 30386 attestation, updates order file. `scanAndFulfill()` — batch processes all orders in a directory. Skips unpaid/already-fulfilled. 7 dedicated tests, all passing.
+- [x] **Order fulfillment bridge** (`scripts/check-orders.sh`): SSHes to Umbrel host, reads attestation-orders/ directory, identifies paid-but-unfulfilled orders, runs fulfillment, syncs updated order JSON back to host.
+- [x] **Automated monitoring cycle** (`src/run-monitoring.js` + `scripts/run-monitoring.sh`): Reads monitor-registry.json, probes all enabled endpoints (5 samples each), publishes fresh observer attestations to 4 Nostr relays. Includes order check + monitoring in one entry point.
+- [x] **Monitor registry seeded**: `data/monitor-registry.json` with utilshed.com (karl_bott, tier: free) and dispatches.mystere.me (self-monitor).
+- [x] **Live monitoring cycle tested**: Both endpoints probed (5/5 reachable each), attestations published to all 4 relays. Event IDs: 2750b7ac (utilshed), ac19afa9 (dispatches).
+- [x] **Self-attestation cron updated** (a91c0862): Now runs ensure-server.sh + self-attestation + order fulfillment + monitoring cycle every 6h. Timeout increased to 180s.
+- [x] **Build cron adjusted** (9fbc8434): Reduced to every 6h (was 3h), timeout increased to 600s (was 300s — was hitting consecutive timeouts).
+- [x] **.gitignore updated**: Added monitor-logs/, fulfillment-log.json, pending-orders/, test-fulfill/ to exclusions.
+- [x] **All tests passing**: 312 (npm test) + 44 (bilateral) + 7 (fulfillment) = 363 assertions, 0 failures.
+
 ### TODO (Consolidated — current)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips by Levi)
 - [ ] Live bilateral attestation with karl_bott — in progress, he is building reciprocal attestation for utilshed.com
 - [ ] karl_bott: receive SEO audit for dispatches.mystere.me (owed from earlier)
 - [ ] Post NIP 30386 + public API link to nostr dev channels for broader feedback
-- [ ] Attestation fulfillment workflow: when order is paid, notify karl_bott to start monitoring + auto-publish first attestation
+- [x] Attestation fulfillment workflow: fulfillOrder() + scanAndFulfill() + check-orders.sh + cron integration complete
 - [ ] Monthly recurring billing for monitoring (1000 sats/month auto-invoicing)
+- [ ] Add karl_bott DM notification to fulfillment (auto-message when order fulfilled)
+- [ ] Test end-to-end order flow: create test order, mark paid, run check-orders.sh, verify attestation published
