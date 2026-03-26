@@ -65,13 +65,22 @@ for REMOTE_PATH in $ORDER_FILES; do
   cd "$PROJECT_DIR"
   node src/fulfill.js "$LOCAL_TMP" 2>&1 || echo "  WARNING: Fulfillment encountered errors"
   
-  # Copy updated order back to host
-  scp -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i "$SSH_KEY" "$LOCAL_TMP" "$SSH_HOST:$REMOTE_PATH" 2>/dev/null
+  # Copy updated order back to host via ssh cat (more reliable than scp under SIGTERM)
+  cat "$LOCAL_TMP" | ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i "$SSH_KEY" "$SSH_HOST" \
+    "cat > $REMOTE_PATH" 2>/dev/null
+  
+  # Verify sync succeeded
+  REMOTE_CHECK=$(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i "$SSH_KEY" "$SSH_HOST" \
+    "python3 -c \"import json; d=json.load(open('$REMOTE_PATH')); print('ok' if d.get('monitoring_started') else 'fail')\"" 2>/dev/null || echo "fail")
   
   # Clean up local temp
   rm -f "$LOCAL_TMP"
   
-  echo "  Order $FILENAME fulfilled and synced back to host."
+  if [ "$REMOTE_CHECK" = "ok" ]; then
+    echo "  Order $FILENAME fulfilled and synced back to host. ✓"
+  else
+    echo "  WARNING: Order $FILENAME fulfilled locally but sync-back may have failed!"
+  fi
 done
 
 if [ "$FOUND_UNFULFILLED" -eq 0 ]; then

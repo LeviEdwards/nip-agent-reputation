@@ -578,6 +578,13 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **.gitignore updated**: Added monitor-logs/, fulfillment-log.json, pending-orders/, test-fulfill/ to exclusions.
 - [x] **All tests passing**: 312 (npm test) + 44 (bilateral) + 7 (fulfillment) = 363 assertions, 0 failures.
 
+### v1.0.3 (2026-03-26) — E2E test + partner notifications + sync-back fix
+
+- [x] **End-to-end order flow tested**: Created test order on host, marked paid, ran check-orders.sh → fulfillment probed httpbin.org 5/5, published attestation 1a082bd0 to 4/4 relays, order updated with monitoring_started=true. Cleaned up after.
+- [x] **Sync-back bug fixed**: check-orders.sh was using `scp` to copy fulfilled orders back to host — could fail under SIGTERM from cron timeouts. Replaced with `ssh cat >` pipe (more atomic) + verification step that checks `monitoring_started` on the remote file.
+- [x] **Partner DM notifications**: fulfill.js now auto-messages karl_bott on Moltbook (conversation 987483e9) when an order is fulfilled. Includes endpoint URL, probe results, security score, event ID, amount, and karl's 60% share. Non-fatal — errors logged but don't block fulfillment.
+- [x] **karl_bott conversation ID hardcoded**: 987483e9-c316-4a4f-9b1c-8b396501eac9 (overridable via KARL_DM_CONVERSATION_ID env var).
+
 ### TODO (Consolidated — current)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips by Levi)
@@ -586,5 +593,5 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [ ] Post NIP 30386 + public API link to nostr dev channels for broader feedback
 - [x] Attestation fulfillment workflow: fulfillOrder() + scanAndFulfill() + check-orders.sh + cron integration complete
 - [ ] Monthly recurring billing for monitoring (1000 sats/month auto-invoicing)
-- [ ] Add karl_bott DM notification to fulfillment (auto-message when order fulfilled)
-- [ ] Test end-to-end order flow: create test order, mark paid, run check-orders.sh, verify attestation published
+- [x] Add karl_bott DM notification to fulfillment — auto-message on Moltbook with order details + revenue split
+- [x] Test end-to-end order flow — verified working with httpbin.org test order, attestation published to all 4 relays

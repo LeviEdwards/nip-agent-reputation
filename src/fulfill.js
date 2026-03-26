@@ -25,6 +25,12 @@ const DATA_DIR = join(__dirname, '..', 'data');
 const REGISTRY_PATH = join(DATA_DIR, 'monitor-registry.json');
 const FULFILL_LOG = join(DATA_DIR, 'fulfillment-log.json');
 
+// Moltbook DM config for partner notifications
+const MOLTBOOK_API = 'https://www.moltbook.com/api/v1';
+const MOLTBOOK_API_KEY = 'moltbook_sk_4AQK9KbEL-ypTRPr3w20HYhU4DwgQxV_';
+// karl_bott conversation ID on Moltbook
+const KARL_CONVERSATION_ID = process.env.KARL_DM_CONVERSATION_ID || '987483e9-c316-4a4f-9b1c-8b396501eac9';
+
 function ensureDir(dir) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
@@ -202,11 +208,64 @@ export async function fulfillOrder(orderFilePath, opts = {}) {
     console.log(`  Order updated: monitoring_started=true, event=${result.eventId}`);
   }
   
-  // Step 4: Log
+  // Step 4: Notify monitoring partner
+  if (result.eventId) {
+    await notifyPartner(order, result);
+  }
+  
+  // Step 5: Log
   logFulfillment(orderId, endpoint_url, result);
   
   console.log(`=== Fulfillment complete ===\n`);
   return result;
+}
+
+/**
+ * Notify monitoring partner (karl_bott) about a newly fulfilled order.
+ * Uses Moltbook DM API. Non-fatal — logs errors but doesn't fail fulfillment.
+ */
+async function notifyPartner(order, result) {
+  if (!KARL_CONVERSATION_ID) {
+    console.log('  Partner notification: KARL_DM_CONVERSATION_ID not set, skipping.');
+    return { sent: false, reason: 'no_conversation_id' };
+  }
+  
+  const msg = [
+    `🔔 New attestation order fulfilled!`,
+    ``,
+    `**Endpoint:** ${order.endpoint_url}`,
+    `**Order ID:** ${order.orderId}`,
+    `**Probe results:** ${result.probeResults?.reachable}/${result.probeResults?.total} reachable, ${result.probeResults?.avgLatencyMs}ms avg`,
+    `**Security:** ${result.securityResults?.present?.length || 0}/${result.securityResults?.total || 7} headers`,
+    `**Event ID:** ${result.eventId}`,
+    `**Amount:** ${order.amount_sats} sats`,
+    ``,
+    `This endpoint is now in the monitoring registry. Your share: ${Math.round((order.amount_sats || 5000) * 0.6)} sats (60%).`,
+    `Please add it to your monitoring schedule.`
+  ].join('\n');
+  
+  try {
+    const resp = await fetch(`${MOLTBOOK_API}/agents/dm/conversations/${KARL_CONVERSATION_ID}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': MOLTBOOK_API_KEY,
+      },
+      body: JSON.stringify({ message: msg }),
+    });
+    
+    if (resp.ok) {
+      console.log('  Partner notification sent to karl_bott via Moltbook DM. ✓');
+      return { sent: true };
+    } else {
+      const text = await resp.text().catch(() => '');
+      console.log(`  Partner notification failed: ${resp.status} ${text}`);
+      return { sent: false, reason: `http_${resp.status}` };
+    }
+  } catch (err) {
+    console.log(`  Partner notification error: ${err.message}`);
+    return { sent: false, reason: err.message };
+  }
 }
 
 /**
