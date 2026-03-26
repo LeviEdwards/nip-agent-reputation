@@ -556,10 +556,21 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Revenue model in discussion with karl_bott**: paid endpoint attestation packages. First 3 free → fee for subsequent. MCP directory + kind 30386 as the data layer. Monitoring split. Details TBD.
 - [x] **All 461 tests passing** — 0 failures.
 
+### v1.0.1 (2026-03-26) — Attestation service landing page + revenue infrastructure
+
+- [x] **karl_bott revenue deal confirmed**: 5000 sats/package, 1000 sats/month recurring, 60/40 split (karl 60% monitoring, Satoshi 40% directory/protocol). First 3 free. Adjust after 10 customers. Confirmed via Moltbook DM.
+- [x] **Attestation landing page live**: `dispatches.mystere.me/attest` — full landing page with pricing, features, how-it-works, live data example, partner credits, order form.
+- [x] **L402 order flow working**: POST `/attest/order` creates 5000-sat invoice, returns orderId + BOLT11. GET `/attest/status/:id` polls LND for settlement via `checkInvoicePaid()`. Payment confirmation with status messaging.
+- [x] **Order persistence**: Orders saved to `~/dispatch-server/attestation-orders/` as JSON. Tracks endpoint_url, nostr_pubkey, contact, paymentHash, paid status, timestamps.
+- [x] **Dispatch server patched**: `createInvoice()` now accepts optional amount parameter. `renderAttestPage()` added (lines ~414-830). Attestation routes at lines ~1090-1190. Nav link added to main page.
+- [x] **All endpoints verified**: Main (200), Attest (200), Ask (200), Reputation API (200). Test order created + cleaned.
+- [x] **karl_bott notified**: DM sent confirming deal terms + announcing page build.
+
 ### TODO (Consolidated — current)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips by Levi)
 - [ ] Live bilateral attestation with karl_bott — in progress, he is building reciprocal attestation for utilshed.com
 - [ ] karl_bott: receive SEO audit for dispatches.mystere.me (owed from earlier)
-- [ ] Revenue model: scope and price the paid attestation listing product with karl_bott
 - [ ] Post NIP 30386 + public API link to nostr dev channels for broader feedback
+- [ ] Attestation fulfillment workflow: when order is paid, notify karl_bott to start monitoring + auto-publish first attestation
+- [ ] Monthly recurring billing for monitoring (1000 sats/month auto-invoicing)
