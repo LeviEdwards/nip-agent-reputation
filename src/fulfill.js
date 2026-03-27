@@ -19,6 +19,7 @@ import { probeEndpoint, checkSecurityHeaders } from './monitor.js';
 import { ObservationSession, buildObserverAttestation } from './observer.js';
 import { publishToRelays, DEFAULT_RELAYS } from './attestation.js';
 import { getKeypair } from './keys.js';
+import { addToBilling } from './billing.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '..', 'data');
@@ -208,12 +209,21 @@ export async function fulfillOrder(orderFilePath, opts = {}) {
     console.log(`  Order updated: monitoring_started=true, event=${result.eventId}`);
   }
   
-  // Step 4: Notify monitoring partner
+  // Step 4: Add to recurring billing cycle
+  if (result.eventId) {
+    try {
+      addToBilling(order);
+    } catch (err) {
+      console.log(`  Billing registration error (non-fatal): ${err.message}`);
+    }
+  }
+  
+  // Step 5: Notify monitoring partner
   if (result.eventId) {
     await notifyPartner(order, result);
   }
   
-  // Step 5: Log
+  // Step 6: Log
   logFulfillment(orderId, endpoint_url, result);
   
   console.log(`=== Fulfillment complete ===\n`);

@@ -102,3 +102,17 @@ export {
   fulfillOrder,
   scanAndFulfill,
 } from './src/fulfill.js';
+
+// Recurring billing
+export {
+  addToBilling,
+  checkDueAccounts,
+  markInvoiced,
+  markPaid,
+  suspendAccount,
+  getBillingStatus,
+  runBillingCycle,
+  loadBillingAccounts,
+  saveBillingAccounts,
+  buildInvoiceMemo,
+} from './src/billing.js';

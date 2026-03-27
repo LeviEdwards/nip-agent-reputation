@@ -18,6 +18,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { runMonitoringCycle, initRegistry } from './monitor.js';
 import { scanAndFulfill } from './fulfill.js';
+import { runBillingCycle, getBillingStatus } from './billing.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, '..', 'data');
@@ -78,6 +79,25 @@ async function main() {
       }
     } catch (err) {
       console.error(`  Monitoring error: ${err.message}`);
+    }
+  }
+  
+  // 4. Run billing cycle (unless --orders-only or --monitor-only)
+  if (!ordersOnly && !monitorOnly) {
+    console.log('\n--- Billing Check ---');
+    try {
+      const status = getBillingStatus();
+      if (status.totalAccounts > 0) {
+        console.log(`  ${status.totalAccounts} billing accounts (${status.active} active, MRR: ${status.monthlyRecurring} sats)`);
+        const actions = await runBillingCycle({ dryRun });
+        if (actions.invoicesGenerated > 0 || actions.accountsSuspended > 0) {
+          console.log(`  Actions: ${actions.invoicesGenerated} invoices, ${actions.accountsSuspended} suspensions`);
+        }
+      } else {
+        console.log('  No billing accounts yet.');
+      }
+    } catch (err) {
+      console.error(`  Billing error: ${err.message}`);
     }
   }
   

@@ -8,3 +8,5 @@ data/monitor-logs/
 data/fulfillment-log.json
 data/pending-orders/
 data/test-fulfill/
+data/billing-accounts.json
+data/billing-log.json

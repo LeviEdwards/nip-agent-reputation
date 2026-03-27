@@ -585,6 +585,27 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Partner DM notifications**: fulfill.js now auto-messages karl_bott on Moltbook (conversation 987483e9) when an order is fulfilled. Includes endpoint URL, probe results, security score, event ID, amount, and karl's 60% share. Non-fatal — errors logged but don't block fulfillment.
 - [x] **karl_bott conversation ID hardcoded**: 987483e9-c316-4a4f-9b1c-8b396501eac9 (overridable via KARL_DM_CONVERSATION_ID env var).
 
+### v1.0.4 (2026-03-27) — Recurring billing system
+
+- [x] **Built `src/billing.js`** (14.9KB): Full recurring billing module for monthly monitoring fees.
+  - `addToBilling()` — registers fulfilled order for recurring billing (30-day cycle)
+  - `checkDueAccounts()` — identifies accounts needing invoices (due, grace period, suspended)
+  - `markInvoiced()` / `markPaid()` / `suspendAccount()` — state machine transitions
+  - `getBillingStatus()` — summary of all accounts with MRR and revenue totals
+  - `runBillingCycle()` — cron-ready: generates invoices, handles grace periods, suspends delinquent accounts
+  - `buildInvoiceMemo()` — standardized LND invoice memo format
+  - Partner notifications: auto-DMs karl_bott on invoice generation, payment received, and suspension events
+  - 7-day grace period before suspension for missed payments
+  - Audit log: all billing events recorded to `data/billing-log.json`
+- [x] **Built `scripts/check-billing.sh`** (2.8KB): Cron bridge script. Creates LND invoices via lncli.sh, checks settled invoices via LND API, runs billing cycle.
+- [x] **Built `test/test-billing.js`** (10.5KB): 12 tests — all passing. Covers: account creation, duplicate rejection, billing date math, due detection, invoicing, payment cycling, suspension, status summary, dry run, logging, memo format.
+- [x] **Integrated into fulfillment**: `fulfill.js` now auto-calls `addToBilling()` after successful order fulfillment. Non-fatal error handling.
+- [x] **Integrated into monitoring cycle**: `run-monitoring.js` now runs billing check after order fulfillment and endpoint monitoring. Shows MRR and account counts.
+- [x] **Exports added**: 10 billing functions exported from index.js.
+- [x] **.gitignore updated**: billing-accounts.json and billing-log.json excluded from git.
+- [x] **Pricing**: 1000 sats/month per endpoint. 60/40 split (karl 60% monitoring, satoshi 40% directory/protocol). First 3 free (handled at order level, not billing level).
+- [x] **All tests passing**: 12 (billing) + 7 (fulfillment) + 312 (standard) + 44 (bilateral) = 375 assertions, 0 failures.
+
 ### TODO (Consolidated — current)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips by Levi)
@@ -592,6 +613,6 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [ ] karl_bott: receive SEO audit for dispatches.mystere.me (owed from earlier)
 - [ ] Post NIP 30386 + public API link to nostr dev channels for broader feedback
 - [x] Attestation fulfillment workflow: fulfillOrder() + scanAndFulfill() + check-orders.sh + cron integration complete
-- [ ] Monthly recurring billing for monitoring (1000 sats/month auto-invoicing)
+- [x] Monthly recurring billing for monitoring (1000 sats/month auto-invoicing) — billing.js + check-billing.sh + integrated into monitoring cycle
 - [x] Add karl_bott DM notification to fulfillment — auto-message on Moltbook with order details + revenue split
 - [x] Test end-to-end order flow — verified working with httpbin.org test order, attestation published to all 4 relays
