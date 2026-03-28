@@ -1,6 +1,6 @@
 {
   "name": "nip-agent-reputation",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "description": "Nostr protocol for agent reputation attestations on Lightning Network \u2014 reference implementation of NIP-XX",
   "main": "index.js",
@@ -23,7 +23,7 @@
     "nip-reputation": "./src/cli.js"
   },
   "scripts": {
-    "test": "node src/test-decay.js && node src/test-bilateral.js && node src/test-auto-publish.js && node src/test-integration.js && node src/test-observer.js && node src/test-web-of-trust.js && node src/test-discover.js && node src/test-validate.js && node src/test-server.js",
+    "test": "node src/test-decay.js && node src/test-bilateral.js && node src/test-auto-publish.js && node src/test-integration.js && node src/test-observer.js && node src/test-web-of-trust.js && node src/test-discover.js && node src/test-validate.js && node src/test-server.js && node test/test-fulfill.js && node test/test-billing.js",
     "collect": "node src/cli.js collect",
     "publish": "node src/cli.js publish",
     "publish:auto": "node src/cli.js publish --auto",

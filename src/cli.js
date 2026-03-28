@@ -61,6 +61,11 @@ import {
   validateBatch,
 } from './validate.js';
 import { createServer } from './server.js';
+import {
+  getBillingStatus,
+  loadBillingAccounts,
+  checkDueAccounts,
+} from './billing.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -98,8 +103,10 @@ async function main() {
       return cmdValidate();
     case 'serve':
       return cmdServe();
+    case 'billing':
+      return cmdBilling();
     default:
-      console.log(`NIP Agent Reputation — Reference Implementation v0.9.9
+      console.log(`NIP Agent Reputation — Reference Implementation v1.0.5
 
 Usage:
   node src/cli.js collect              Gather LND metrics (dry run)
@@ -147,6 +154,11 @@ HTTP API Server:
   node src/cli.js serve                            Start reputation API server (default port 3386)
   node src/cli.js serve --port <n>                 Start on custom port
   node src/cli.js serve --relays <url1,url2>       Use custom relay list
+
+Recurring billing:
+  node src/cli.js billing                          Show billing status
+  node src/cli.js billing --due                    Show accounts currently due for invoicing
+  node src/cli.js billing --accounts               List all billing accounts with details
 `);
       process.exit(1);
   }
@@ -837,6 +849,53 @@ async function cmdServe() {
     console.log();
     console.log('Press Ctrl+C to stop.');
   });
+}
+
+async function cmdBilling() {
+  const args = process.argv.slice(3);
+  const showDue = args.includes('--due');
+  const showAccounts = args.includes('--accounts');
+
+  const status = getBillingStatus();
+
+  console.log('\n⚡ NIP-30386 Recurring Billing Status\n');
+  console.log(`Accounts:       ${status.totalAccounts}`);
+  console.log(`  Active:       ${status.active}`);
+  console.log(`  Invoiced:     ${status.invoiced}`);
+  console.log(`  Suspended:    ${status.suspended}`);
+  console.log(`Total revenue:  ${status.totalRevenue.toLocaleString()} sats`);
+  console.log(`MRR:            ${status.monthlyRecurring.toLocaleString()} sats/month`);
+
+  if (showDue || showAccounts) {
+    const data = loadBillingAccounts();
+    
+    if (showDue) {
+      const dueResult = checkDueAccounts();
+      console.log(`\nDue for invoicing: ${dueResult.due.length}`);
+      for (const a of dueResult.due) {
+        console.log(`  • ${a.endpointUrl} — next billing was ${a.nextBillingDate?.slice(0, 10)}`);
+      }
+      if (dueResult.graceExpired?.length > 0) {
+        console.log(`\nGrace period expired (suspension pending): ${dueResult.graceExpired.length}`);
+        for (const a of dueResult.graceExpired) {
+          console.log(`  • ${a.endpointUrl} — ${a.consecutiveMissed} missed`);
+        }
+      }
+    }
+
+    if (showAccounts) {
+      console.log('\nAll accounts:');
+      for (const a of data.accounts) {
+        const nextBill = a.nextBillingDate ? a.nextBillingDate.slice(0, 10) : 'N/A';
+        const paid = a.totalPaid.toLocaleString();
+        console.log(`  [${a.status.toUpperCase()}] ${a.endpointUrl}`);
+        console.log(`    orderId: ${a.orderId} | paid: ${paid} sats | next: ${nextBill} | invoices: ${a.invoiceCount}`);
+      }
+    }
+  }
+
+  console.log('\nRun: node src/cli.js billing --accounts  for full account details');
+  console.log('Run: node scripts/run-billing.js --dry-run  to preview billing cycle\n');
 }
 
 main().catch(err => {

@@ -206,6 +206,73 @@ async function handleReputation(pubkey, params, relays) {
   }
 }
 
+// --- Route: GET /reputation/badge/:pubkey ---
+
+function renderBadgeSvg(trustLevel, attestationCount, totalWeight) {
+  const colors = {
+    verified: '#22c55e',   // green
+    moderate: '#eab308',   // yellow
+    low: '#f97316',        // orange
+    none: '#6b7280',       // gray
+  };
+  const labels = {
+    verified: 'verified',
+    moderate: 'moderate',
+    low: 'low',
+    none: 'unrated',
+  };
+
+  const color = colors[trustLevel] || colors.none;
+  const label = labels[trustLevel] || 'unrated';
+  const leftText = 'NIP-30386';
+  const rightText = `${label} · ${attestationCount} attestation${attestationCount !== 1 ? 's' : ''}`;
+
+  // Compute widths (approximate character widths for Verdana 11px)
+  const leftW = leftText.length * 7.2 + 12;
+  const rightW = rightText.length * 6.5 + 12;
+  const totalW = leftW + rightW;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="20" role="img" aria-label="${leftText}: ${rightText}">
+  <title>${leftText}: ${rightText}</title>
+  <linearGradient id="s" x2="0" y2="100%">
+    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+    <stop offset="1" stop-opacity=".1"/>
+  </linearGradient>
+  <clipPath id="r"><rect width="${totalW}" height="20" rx="3" fill="#fff"/></clipPath>
+  <g clip-path="url(#r)">
+    <rect width="${leftW}" height="20" fill="#555"/>
+    <rect x="${leftW}" width="${rightW}" height="20" fill="${color}"/>
+    <rect width="${totalW}" height="20" fill="url(#s)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="11">
+    <text aria-hidden="true" x="${leftW / 2}" y="15" fill="#010101" fill-opacity=".3">${leftText}</text>
+    <text x="${leftW / 2}" y="14">${leftText}</text>
+    <text aria-hidden="true" x="${leftW + rightW / 2}" y="15" fill="#010101" fill-opacity=".3">${rightText}</text>
+    <text x="${leftW + rightW / 2}" y="14">${rightText}</text>
+  </g>
+</svg>`;
+}
+
+async function handleBadge(pubkey, params, relays) {
+  // Reuse reputation logic
+  const result = await handleReputation(pubkey, params, relays);
+  if (result.status !== 200) {
+    // Return a gray "error" badge
+    return {
+      status: 200,
+      contentType: 'image/svg+xml',
+      data: renderBadgeSvg('none', 0, 0),
+    };
+  }
+
+  const { trustLevel, attestationCount, totalWeight } = result.data;
+  return {
+    status: 200,
+    contentType: 'image/svg+xml',
+    data: renderBadgeSvg(trustLevel || 'none', attestationCount || 0, totalWeight || 0),
+  };
+}
+
 // --- Route: GET /discover ---
 
 async function handleDiscover(params, relays) {
@@ -399,6 +466,23 @@ export function createServer(options = {}) {
         return;
       }
 
+      // Route: GET /reputation/badge/:pubkey
+      const badgeMatch = pathname.match(/^\/reputation\/badge\/([a-f0-9]{64}|[a-f0-9]{66}|npub1[a-z0-9]+)$/);
+      if (badgeMatch && req.method === 'GET') {
+        const result = await handleBadge(badgeMatch[1], params, relayUrls);
+        if (result.contentType === 'image/svg+xml') {
+          res.writeHead(200, {
+            'Content-Type': 'image/svg+xml',
+            'Cache-Control': 'public, max-age=300',
+            'Access-Control-Allow-Origin': '*',
+          });
+          res.end(result.data);
+        } else {
+          respond(res, result.status, result.data);
+        }
+        return;
+      }
+
       // Route: GET /reputation/:pubkey
       const repMatch = pathname.match(/^\/reputation\/([a-f0-9]{64}|[a-f0-9]{66}|npub1[a-z0-9]+)$/);
       if (repMatch && req.method === 'GET') {
@@ -423,7 +507,7 @@ export function createServer(options = {}) {
       }
 
       // 404
-      respond(res, 404, { error: 'Not found', availableEndpoints: ['/', '/health', '/reputation/:pubkey', '/discover', '/validate'] });
+      respond(res, 404, { error: 'Not found', availableEndpoints: ['/', '/health', '/reputation/:pubkey', '/reputation/badge/:pubkey', '/discover', '/validate'] });
 
     } catch (err) {
       console.error(`[${new Date().toISOString()}] Error:`, err);

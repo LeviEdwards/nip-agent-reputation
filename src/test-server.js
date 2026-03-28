@@ -289,6 +289,26 @@ async function runTests() {
       assert(res.status === 200 || res.status === 500, `66-hex routes correctly (got ${res.status})`);
     }
 
+    // === Badge endpoint ===
+    console.log('\n=== Badge endpoint ===');
+    {
+      // Badge for unknown pubkey — should return SVG with "unrated"
+      const unknownHex = '00'.repeat(32);
+      const res = await fetch(`/reputation/badge/${unknownHex}`);
+      assert(res.status === 200, 'Badge returns 200 for unknown pubkey');
+      const ct = res.headers['content-type'];
+      assert(ct && ct.includes('image/svg+xml'), `Badge content-type is SVG (got ${ct})`);
+      const svg = res.body;
+      assert(svg.includes('NIP-30386'), 'Badge SVG contains NIP-30386 label');
+      assert(svg.includes('unrated'), 'Unknown pubkey badge shows unrated');
+      assert(svg.includes('<svg'), 'Badge is valid SVG');
+    }
+    {
+      // Badge route should not match non-hex
+      const res = await fetch('/reputation/badge/not-a-pubkey');
+      assert(res.status === 404, 'Badge rejects invalid pubkey format');
+    }
+
     // === Method not allowed ===
     console.log('\n=== Wrong HTTP methods ===');
     {

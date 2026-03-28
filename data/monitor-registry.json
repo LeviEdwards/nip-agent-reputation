@@ -1,7 +1,7 @@
 {
   "version": 1,
   "description": "NIP-30386 Endpoint Monitoring Registry",
-  "updatedAt": "2026-03-27T05:16:02.760Z",
+  "updatedAt": "2026-03-28T05:11:39.902Z",
   "endpoints": [
     {
       "url": "https://utilshed.com",
