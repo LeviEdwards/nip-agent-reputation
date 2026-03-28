@@ -309,6 +309,17 @@ async function runTests() {
       assert(res.status === 404, 'Badge rejects invalid pubkey format');
     }
 
+    // === Directory endpoint ===
+    console.log('\n=== Directory endpoint ===');
+    {
+      const res = await fetch('/directory');
+      assert(res.status === 200, 'Directory returns 200');
+      const ct = res.headers['content-type'];
+      assert(ct && ct.includes('text/html'), `Directory content-type is HTML (got ${ct})`);
+      assert(res.body.includes('NIP-30386 Agent Directory'), 'Directory contains title');
+      assert(res.body.includes('<!DOCTYPE html>'), 'Directory is valid HTML document');
+    }
+
     // === Method not allowed ===
     console.log('\n=== Wrong HTTP methods ===');
     {

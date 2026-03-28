@@ -1,9 +1,9 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v1.0.5 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 399 tests, repo public, badge endpoint live
+**Status:** DRAFT v1.0.6 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 403 tests, repo public, directory + badge live
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
-**Last Updated:** 2026-03-27
+**Last Updated:** 2026-03-28
 
 ---
 
@@ -619,6 +619,16 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **6 new server tests** for badge endpoint (SVG format, content-type, trust labels, invalid pubkey rejection). Total: 54 server tests.
 - [x] **CLI version synced** to v1.0.5 (was stuck at v0.9.9 in help output).
 - [x] **All 399 tests passing**: 54 server + 85 validate + 43 discover + 54 wot + 86 observer + 64 integration + 37 auto-pub + 44 bilateral + decay + 12 billing + 7 fulfill.
+
+### v1.0.6 (2026-03-28) — Agent directory page, NIP-XX.md polish
+
+- [x] **HTML agent directory** — `GET /directory` on reputation server renders visual directory of all discovered services with trust levels, attestation counts, dimensions, protocol tags, and endpoint links. Dark theme, responsive grid. Live at `dispatches.mystere.me/api/reputation/directory`.
+- [x] **Directory proxy route** added to dispatch server — proxies to container at 10.21.0.3:3386, 2-minute cache.
+- [x] **4 new server tests** for directory endpoint (200 status, HTML content-type, title presence, valid document). Total: 58 server tests.
+- [x] **NIP-XX.md updated** — test count corrected to 399+, API version bumped to 1.0.5.
+- [x] **Fresh monitoring cycle** — both endpoints probed and attested (utilshed 311ef0c4, dispatches e7ad0ec3).
+- [x] **No new Nostr replies** from AskewPrime yet. No new Moltbook DMs from karl_bott (API was flaky).
+- [x] **All tests passing**: 58 server + 85 validate + 43 discover + 12 billing + 7 fulfill = 205 (module tests); full suite including bilateral/observer/wot/integration/decay/auto-pub: 403 total.
 
 ### TODO (Consolidated — current)
 - [ ] Publish to npm (needs npm auth token from Levi)

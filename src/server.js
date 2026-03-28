@@ -320,6 +320,89 @@ async function handleDiscover(params, relays) {
   }
 }
 
+// --- Route: GET /directory ---
+
+function renderDirectoryHtml(services, attestationMap) {
+  const trustColor = (level) => ({
+    verified: '#22c55e', moderate: '#eab308', low: '#f97316', none: '#6b7280'
+  }[level] || '#6b7280');
+
+  const serviceCards = services.map(s => {
+    const rep = s.reputation;
+    const trust = rep?.trustLevel || 'none';
+    const color = trustColor(trust);
+    const attCount = rep?.attestationCount || 0;
+    const dims = rep?.dimensions || {};
+    const dimRows = Object.entries(dims).map(([name, d]) => {
+      const val = typeof d.weightedAvg === 'number' ? d.weightedAvg.toFixed(4) : d.weightedAvg;
+      return `<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:13px"><span style="color:#9ca3af">${name}</span><span style="color:#e5e7eb">${val}</span></div>`;
+    }).join('');
+
+    return `
+    <div style="background:#1f2937;border-radius:12px;padding:20px;border:1px solid #374151">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin:0;font-size:16px;color:#f9fafb">${s.serviceId || 'unnamed'}</h3>
+        <span style="background:${color}22;color:${color};padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600">${trust}</span>
+      </div>
+      ${s.description ? `<p style="color:#9ca3af;font-size:13px;margin:0 0 8px">${s.description}</p>` : ''}
+      <div style="font-size:12px;color:#6b7280;margin-bottom:8px">
+        ${s.protocol ? `<span style="background:#374151;padding:2px 6px;border-radius:4px;margin-right:4px">${s.protocol}</span>` : ''}
+        ${s.price ? `<span style="background:#374151;padding:2px 6px;border-radius:4px">${s.price.amount} ${s.price.unit}/${s.price.per}</span>` : ''}
+      </div>
+      ${s.endpoint ? `<div style="font-size:12px;color:#60a5fa;word-break:break-all;margin-bottom:8px"><a href="${s.endpoint}" style="color:#60a5fa">${s.endpoint}</a></div>` : ''}
+      <div style="font-size:11px;color:#6b7280;margin-bottom:8px">pubkey: ${s.pubkey?.slice(0,16)}...</div>
+      ${attCount > 0 ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #374151"><div style="font-size:12px;color:#9ca3af;margin-bottom:4px">${attCount} attestation${attCount !== 1 ? 's' : ''}</div>${dimRows}</div>` : '<div style="font-size:12px;color:#6b7280;margin-top:8px">No attestations yet</div>'}
+    </div>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NIP-30386 Agent Directory</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#111827;color:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding:24px}
+a{color:#60a5fa;text-decoration:none}a:hover{text-decoration:underline}</style>
+</head>
+<body>
+<div style="max-width:900px;margin:0 auto">
+  <div style="text-align:center;margin-bottom:32px">
+    <h1 style="font-size:28px;margin:0 0 8px">⚡ NIP-30386 Agent Directory</h1>
+    <p style="color:#9ca3af;margin:0">Autonomous agents with verifiable reputation on Lightning + Nostr</p>
+    <p style="color:#6b7280;font-size:13px;margin-top:8px">${services.length} service${services.length !== 1 ? 's' : ''} discovered · Updated ${new Date().toISOString().slice(0,16)}Z</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px">
+    ${serviceCards || '<div style="color:#6b7280;text-align:center;grid-column:1/-1;padding:40px">No services discovered yet</div>'}
+  </div>
+  <div style="text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #1f2937;color:#6b7280;font-size:12px">
+    <p>Data from kind 30386 + 31990 events on Nostr relays · <a href="/discover?reputation=true">JSON API</a> · <a href="https://github.com/LeviEdwards/nip-agent-reputation">Source</a></p>
+  </div>
+</div>
+</body>
+</html>`;
+}
+
+async function handleDirectory(params, relays) {
+  try {
+    const services = await discoverServices(relays, {
+      withReputation: true,
+      maxAgeHours: params.max_age ? parseInt(params.max_age, 10) : 720,
+    });
+
+    return {
+      status: 200,
+      contentType: 'text/html',
+      data: renderDirectoryHtml(services),
+    };
+  } catch (err) {
+    return {
+      status: 500,
+      contentType: 'text/html',
+      data: `<html><body style="background:#111827;color:#f9fafb;font-family:sans-serif;padding:40px;text-align:center"><h1>Directory Error</h1><p>${err.message}</p></body></html>`,
+    };
+  }
+}
+
 // --- Route: POST /validate ---
 
 async function handleValidate(body) {
@@ -377,7 +460,7 @@ function handleDocs() {
     status: 200,
     data: {
       name: 'NIP Agent Reputation API',
-      version: '0.9.0',
+      version: '1.0.5',
       spec: 'https://github.com/LeviEdwards/nip-agent-reputation/blob/main/NIP-XX.md',
       kind: ATTESTATION_KIND,
       endpoints: {
@@ -491,6 +574,21 @@ export function createServer(options = {}) {
         return;
       }
 
+      // Route: GET /directory
+      if (pathname === '/directory' && req.method === 'GET') {
+        const result = await handleDirectory(params, relayUrls);
+        if (result.contentType === 'text/html') {
+          res.writeHead(result.status, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'public, max-age=120',
+          });
+          res.end(result.data);
+        } else {
+          respond(res, result.status, result.data);
+        }
+        return;
+      }
+
       // Route: GET /discover
       if (pathname === '/discover' && req.method === 'GET') {
         const result = await handleDiscover(params, relayUrls);
@@ -507,7 +605,7 @@ export function createServer(options = {}) {
       }
 
       // 404
-      respond(res, 404, { error: 'Not found', availableEndpoints: ['/', '/health', '/reputation/:pubkey', '/reputation/badge/:pubkey', '/discover', '/validate'] });
+      respond(res, 404, { error: 'Not found', availableEndpoints: ['/', '/health', '/reputation/:pubkey', '/reputation/badge/:pubkey', '/directory', '/discover', '/validate'] });
 
     } catch (err) {
       console.error(`[${new Date().toISOString()}] Error:`, err);
