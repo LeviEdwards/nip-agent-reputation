@@ -116,3 +116,6 @@ export {
   saveBillingAccounts,
   buildInvoiceMemo,
 } from './src/billing.js';
+
+// SDK client
+export { ReputationClient } from './sdk/reputation-client.js';

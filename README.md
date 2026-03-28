@@ -1,6 +1,6 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v1.0.6 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 403 tests, repo public, directory + badge live
+**Status:** DRAFT v1.0.7 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 438 tests, repo public, SDK + directory + badge live
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
 **Last Updated:** 2026-03-28
@@ -630,6 +630,21 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **No new Nostr replies** from AskewPrime yet. No new Moltbook DMs from karl_bott (API was flaky).
 - [x] **All tests passing**: 58 server + 85 validate + 43 discover + 12 billing + 7 fulfill = 205 (module tests); full suite including bilateral/observer/wot/integration/decay/auto-pub: 403 total.
 
+### v1.0.7 (2026-03-28) — Standalone client SDK
+
+- [x] **Built `sdk/reputation-client.js`** (7KB): Zero-dependency, single-file reputation client. Works in Node.js 18+ and browsers.
+  - `query(pubkey)` — fetch aggregated reputation from any NIP-30386 API
+  - `discover(filters?)` — find agent services with reputation data
+  - `evaluate(reputation, amountSats)` — apply configurable payment policy → `{ allow, reasons, trustLevel }`
+  - `shouldPay(reputation, amountSats)` — boolean shorthand
+  - `checkAndDecide(pubkey, amountSats)` — query + evaluate in one call, fails closed on errors
+  - `badgeUrl(pubkey)` — embeddable SVG badge URL
+  - Configurable policy: settlement rate, dispute rate, attestation weight, blind payment limits, large transaction thresholds
+- [x] **SDK README** (`sdk/README.md`): Quick start, API reference, policy defaults, badge embed, self-hosting instructions.
+- [x] **35 SDK tests** (`test/test-sdk.js`): constructor, policy customization, badge URLs, evaluate logic (no attestations, good/weak/bad reputation, large transactions, custom policy), live API tests against public endpoint.
+- [x] **Exported from index.js**: `ReputationClient` available as package export.
+- [x] **All tests passing**: 58 server + 85 validate + 43 discover + 12 billing + 7 fulfill + 35 SDK + bilateral/observer/wot/integration/decay/auto-pub = 438 total.
+
 ### TODO (Consolidated — current)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips by Levi)
@@ -642,3 +657,4 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] Add karl_bott DM notification to fulfillment — auto-message on Moltbook with order details + revenue split
 - [x] Test end-to-end order flow — verified working with httpbin.org test order, attestation published to all 4 relays
 - [x] SVG reputation badge endpoint — live at /reputation/badge/:pubkey, proxied through dispatch server
+- [x] Standalone client SDK — sdk/reputation-client.js with 35 tests
