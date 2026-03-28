@@ -39,7 +39,7 @@ Kind `30386` is a [replaceable parameterized event](01.md). The `d` tag identifi
 ["d", "<subject_identifier>:<service_type>"]
 ```
 
-The `subject_identifier` is typically a Lightning node pubkey (66-character hex, compressed secp256k1) but MAY be any stable public identifier for the subject.
+The `subject_identifier` is typically a Lightning node pubkey (66-character hex, compressed secp256k1) but MAY be any stable public identifier for the subject, including domain names (e.g. `example.com:web-agent`) for HTTP-based services.
 
 Service handler declarations reuse [NIP-89](89.md) kind `31990`.
 

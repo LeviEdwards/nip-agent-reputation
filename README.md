@@ -1,6 +1,6 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v1.0.7 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 438 tests, repo public, SDK + directory + badge live
+**Status:** DRAFT v1.0.8 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 473 tests, repo public, conformance suite + SDK + directory + badge live
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
 **Last Updated:** 2026-03-28
@@ -645,11 +645,27 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Exported from index.js**: `ReputationClient` available as package export.
 - [x] **All tests passing**: 58 server + 85 validate + 43 discover + 12 billing + 7 fulfill + 35 SDK + bilateral/observer/wot/integration/decay/auto-pub = 438 total.
 
+### v1.0.8 (2026-03-28) — Conformance test suite, spec learnings from live relay data
+
+- [x] **Built `test/conformance.js`** (13.5KB): Implementation-agnostic NIP-30386 conformance test suite. Three modes:
+  - `node test/conformance.js` — run against built-in test vectors (98 tests)
+  - `node test/conformance.js --relay wss://nos.lol` — validate live events from any relay
+  - `node test/conformance.js --file events.json` — validate events from file
+- [x] **Validates**: NIP-01 structure, cryptographic signatures (via nostr-tools verifyEvent), d-tag format, L/l namespace tags, attestation_type, node_pubkey, service_type, dimension tags (standard + compact format), half_life_hours, sample_window_hours, content JSON.
+- [x] **Live relay scan found real issues**:
+  - Karl_bott's web agent events use domain names in d-tags (e.g. `tobira.ai:web-agent`) — valid extension, conformance suite updated to accept both hex pubkeys and domain names
+  - Our monitoring attestations use 64-char Nostr pubkeys in `node_pubkey` for HTTP endpoints — acceptable for non-LN agents, suite updated accordingly
+  - Karl_bott's first attestation (dd694061) is missing `l` label tag — genuine conformance issue
+  - Karl_bott published 8+ attestations for various web agents (bot-xchange.ai, va.zo.space, chela.email, face2social.com, tobira.ai, schellingprotocol.com, aiiware.com, dispatches.mystere.me) — protocol adoption happening
+- [x] **NIP-XX.md updated**: Added domain name as valid d-tag subject identifier example
+- [x] **All 473 tests passing**: 98 conformance + 58 server + 85 validate + 43 discover + 12 billing + 7 fulfill + 35 SDK + bilateral/observer/wot/integration/decay/auto-pub
+
 ### TODO (Consolidated — current)
 - [ ] Publish to npm (needs npm auth token from Levi)
 - [ ] Submit NIP-XX as PR to nostr/nips repo (needs fork of nostr-protocol/nips by Levi)
 - [ ] Live bilateral attestation with karl_bott — in progress, he is building reciprocal attestation for utilshed.com
 - [ ] karl_bott: receive SEO audit for dispatches.mystere.me (owed from earlier)
+- [ ] Notify karl_bott about missing `l` tag in dd694061 attestation (conformance issue found by suite)
 - [x] Post NIP 30386 + public API link to nostr dev channels for broader feedback — announced, AskewPrime replied
 - [ ] Follow up with AskewPrime on bilateral attestation exchange (x402 agent, operates autonomous micropayment agents)
 - [x] Attestation fulfillment workflow: fulfillOrder() + scanAndFulfill() + check-orders.sh + cron integration complete
@@ -658,3 +674,4 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] Test end-to-end order flow — verified working with httpbin.org test order, attestation published to all 4 relays
 - [x] SVG reputation badge endpoint — live at /reputation/badge/:pubkey, proxied through dispatch server
 - [x] Standalone client SDK — sdk/reputation-client.js with 35 tests
+- [x] Conformance test suite — test/conformance.js validates any NIP-30386 implementation
