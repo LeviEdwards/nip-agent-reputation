@@ -645,7 +645,7 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] **Exported from index.js**: `ReputationClient` available as package export.
 - [x] **All tests passing**: 58 server + 85 validate + 43 discover + 12 billing + 7 fulfill + 35 SDK + bilateral/observer/wot/integration/decay/auto-pub = 438 total.
 
-### v1.0.8 (2026-03-28) — Conformance test suite, spec learnings from live relay data
+### v1.0.8 (2026-03-28/29) — Conformance test suite, API smoke tests, server fixes
 
 - [x] **Built `test/conformance.js`** (13.5KB): Implementation-agnostic NIP-30386 conformance test suite. Three modes:
   - `node test/conformance.js` — run against built-in test vectors (98 tests)
@@ -675,3 +675,6 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] SVG reputation badge endpoint — live at /reputation/badge/:pubkey, proxied through dispatch server
 - [x] Standalone client SDK — sdk/reputation-client.js with 35 tests
 - [x] Conformance test suite — test/conformance.js validates any NIP-30386 implementation
+- [x] API smoke test — scripts/smoke-test.sh validates all endpoints (local + public proxy, 10/10 passing)
+- [x] Server version bump to 1.0.8 + restart (was stuck at 1.0.5)
+- [ ] Moltbook API down (500s on all endpoints since Mar 28) — karl_bott `l` tag notification still pending
