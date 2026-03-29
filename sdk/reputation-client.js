@@ -21,11 +21,15 @@ export class ReputationClient {
   /**
    * @param {object} [options]
    * @param {string} [options.apiBase] - Base URL of a NIP-30386 reputation API
+   * @param {string} [options.discoverUrl] - Override URL for /discover endpoint (auto-derived from apiBase)
    * @param {number} [options.timeoutMs=10000] - Request timeout
    * @param {object} [options.policy] - Payment policy overrides
    */
   constructor(options = {}) {
     this.apiBase = (options.apiBase || DEFAULT_API).replace(/\/+$/, '');
+    // discoverUrl: explicit override, or derive by replacing last path segment
+    this.discoverUrl = options.discoverUrl || 
+      this.apiBase.replace(/\/[^/]*$/, '/discover');
     this.timeoutMs = options.timeoutMs || 10000;
     this.policy = {
       minSettlementRate: 0.90,
@@ -73,7 +77,7 @@ export class ReputationClient {
     if (filters.min_trust) params.set('min_trust', String(filters.min_trust));
     params.set('reputation', 'true');
     const qs = params.toString();
-    const url = `${this.apiBase.replace(/\/[^/]*$/, '/discover')}${qs ? '?' + qs : ''}`;
+    const url = `${this.discoverUrl}${qs ? '?' + qs : ''}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {

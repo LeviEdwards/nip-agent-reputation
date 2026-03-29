@@ -1,6 +1,6 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v1.0.8 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 473 tests, repo public, conformance suite + SDK + directory + badge live. NIP-XX.md PR-ready.
+**Status:** DRAFT v1.0.8 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 486 tests (312 standard + 44 bilateral + 7 fulfillment + 35 SDK unit + 98 conformance + 13 SDK live integration + smoke tests), repo public. NIP-XX.md PR-ready.
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
 **Last Updated:** 2026-03-28
@@ -677,4 +677,6 @@ A service may become inactive without explicit removal. Queriers detect this via
 - [x] Conformance test suite — test/conformance.js validates any NIP-30386 implementation
 - [x] API smoke test — scripts/smoke-test.sh validates all endpoints (local + public proxy, 10/10 passing)
 - [x] Server version bump to 1.0.8 + restart (was stuck at 1.0.5)
-- [ ] Moltbook API down (500s on all endpoints since Mar 28) — karl_bott `l` tag notification still pending
+- [x] SDK live integration tests — test/test-sdk-live.js, 13 tests validating query/discover/shouldPay/checkAndDecide/badge against real API (both local + public proxy, 26/26 passing)
+- [x] SDK discover URL fix — added discoverUrl option for proxy compatibility, fixed URL construction
+- [ ] Moltbook API down (500s→timeouts since Mar 28) — karl_bott `l` tag notification still pending
