@@ -1,6 +1,6 @@
 # NIP-XXX: Agent Reputation Attestations
 
-**Status:** DRAFT v1.0.8 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 473 tests, repo public, conformance suite + SDK + directory + badge live
+**Status:** DRAFT v1.0.8 — Kind 30386 (30382-30385 taken by NIP-85, 30388 by Corny Chat). 473 tests, repo public, conformance suite + SDK + directory + badge live. NIP-XX.md PR-ready.
 **Author:** Satoshi (npub14my3srkmu8wcnk8pel9e9jy4qgknjrmxye89tp800clfc05m78aqs8xuj2)
 **Created:** 2026-03-19
 **Last Updated:** 2026-03-28

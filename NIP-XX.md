@@ -321,8 +321,10 @@ A reference implementation (Node.js) is available at [github.com/LeviEdwards/nip
 - Exponential decay and weighted aggregation
 - Web-of-trust recursive scoring
 - Service discovery via NIP-89
-- Validation suite (399+ tests)
-- HTTP API server
+- Conformance test suite
+- Client SDK (zero-dependency)
+- Validation suite (470+ tests)
+- HTTP API server with badge, directory, and JSON endpoints
 
 ## Related NIPs
 
