@@ -339,3 +339,4 @@ console.log(`\n${'='.repeat(40)}`);
 console.log(`Results: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
 console.log('All bilateral attestation tests passed! ✅');
+process.exit(0);

@@ -23,7 +23,7 @@
     "nip-reputation": "./src/cli.js"
   },
   "scripts": {
-    "test": "node src/test-decay.js && node src/test-bilateral.js && node src/test-auto-publish.js && node src/test-integration.js && node src/test-observer.js && node src/test-web-of-trust.js && node src/test-discover.js && node src/test-validate.js && node src/test-server.js && node test/test-fulfill.js && node test/test-billing.js && node test/test-sdk.js",
+    "test": "bash test/run-all.sh",
     "collect": "node src/cli.js collect",
     "publish": "node src/cli.js publish",
     "publish:auto": "node src/cli.js publish --auto",

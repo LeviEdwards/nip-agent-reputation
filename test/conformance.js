@@ -371,7 +371,7 @@ async function main() {
 
   console.log(`\n${'─'.repeat(50)}`);
   console.log(`Results: ${passed} passed, ${failed} failed, ${warned} warnings`);
-  if (failed > 0) process.exit(1);
+  process.exit(failed > 0 ? 1 : 0);
 }
 
 main().catch(err => { console.error(err); process.exit(1); });
