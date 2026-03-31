@@ -20,11 +20,22 @@ if (result.allow) {
 
 ## API
 
-### `new ReputationClient(options?)`
+### `new ReputationClient(optionsOrApiBase?)`
+
+Accepts either a URL string or an options object:
+
+```javascript
+// String shorthand
+const client = new ReputationClient('http://localhost:3386');
+
+// Options object
+const client = new ReputationClient({ apiBase: 'http://localhost:3386', timeoutMs: 5000 });
+```
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | `apiBase` | `https://dispatches.mystere.me/api/reputation` | Reputation API URL |
+| `discoverUrl` | Auto-derived from apiBase | Override for proxied /discover endpoint |
 | `timeoutMs` | `10000` | Request timeout |
 | `policy` | See below | Payment policy thresholds |
 

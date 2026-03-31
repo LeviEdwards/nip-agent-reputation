@@ -37,6 +37,12 @@ console.log('=== ReputationClient constructor ===');
   assert(client.policy.maxBlindPaymentSats === 500, 'custom policy override');
   assert(client.policy.minSettlementRate === 0.90, 'default policy preserved');
 }
+{
+  // String shorthand constructor
+  const client = new ReputationClient('http://localhost:3386');
+  assert(client.apiBase === 'http://localhost:3386', 'string constructor sets apiBase');
+  assert(client.timeoutMs === 10000, 'string constructor uses default timeout');
+}
 
 console.log('\n=== badgeUrl ===');
 {

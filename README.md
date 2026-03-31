@@ -4,8 +4,8 @@ A Nostr protocol and reference implementation for agent reputation on Lightning 
 
 Trust is earned through verifiable economic behavior — payment settlements, uptime, service delivery — not social signals.
 
-[![Tests](https://img.shields.io/badge/tests-486%20passing-brightgreen)](#testing)
-[![Version](https://img.shields.io/badge/version-1.0.8-blue)](package.json)
+[![Tests](https://img.shields.io/badge/tests-533%20passing-brightgreen)](#testing)
+[![Version](https://img.shields.io/badge/version-1.0.10-blue)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## What This Is
@@ -23,7 +23,7 @@ Trust is earned through verifiable economic behavior — payment settlements, up
 ```js
 import { ReputationClient } from 'nip-agent-reputation';
 
-const client = new ReputationClient();
+const client = new ReputationClient('https://dispatches.mystere.me/api/reputation');
 const decision = await client.checkAndDecide(pubkey, amountSats);
 
 if (decision.allow) {
@@ -110,6 +110,11 @@ test/
   test-sdk.js        — SDK unit tests (35 tests)
   test-sdk-live.js   — SDK live integration tests (13 tests × local + public)
   conformance.js     — Protocol conformance suite (98 tests)
+
+examples/
+  payment-gate.js      — Check reputation before paying (runnable demo)
+  discover-agents.js   — Find agents with reputation data
+  publish-attestation.js — Publish an attestation to Nostr relays
 
 scripts/
   ensure-server.sh   — Server health check / auto-start
@@ -221,14 +226,32 @@ npx nip-agent-reputation conformance --mode relay --relay wss://nos.lol
 npx nip-agent-reputation conformance --mode file --file events.json
 ```
 
+## Examples
+
+Ready-to-run scripts in `examples/`:
+
+```bash
+# Check an agent's reputation before paying
+node examples/payment-gate.js <agent_pubkey> <amount_sats>
+
+# Discover agents with reputation data
+node examples/discover-agents.js [--service-type <type>]
+
+# Publish an attestation to Nostr relays (requires nostr-tools, ws)
+NOSTR_NSEC=nsec1... node examples/publish-attestation.js
+```
+
 ## Testing
 
 ```bash
-# All unit tests
+# Full suite (13 suites, 533+ tests)
+npm test
+
+# Individual suites
 node test/test.js            # 312 core tests
 node test/test-bilateral.js  # 44 bilateral tests
 node test/test-fulfill.js    # 7 fulfillment tests
-node test/test-sdk.js        # 35 SDK unit tests
+node test/test-sdk.js        # 37 SDK unit tests
 
 # Conformance suite
 node test/conformance.js     # 98 conformance tests
@@ -241,7 +264,7 @@ node test/test-sdk-live.js --public  # 13 tests against public proxy
 bash scripts/smoke-test.sh   # 10 endpoint checks
 ```
 
-**486 tests total**, all passing.
+**533+ tests total** across 13 suites, all passing.
 
 ## Live Deployment
 

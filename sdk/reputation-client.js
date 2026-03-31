@@ -19,13 +19,16 @@ const DEFAULT_API = 'https://dispatches.mystere.me/api/reputation';
 
 export class ReputationClient {
   /**
-   * @param {object} [options]
-   * @param {string} [options.apiBase] - Base URL of a NIP-30386 reputation API
-   * @param {string} [options.discoverUrl] - Override URL for /discover endpoint (auto-derived from apiBase)
-   * @param {number} [options.timeoutMs=10000] - Request timeout
-   * @param {object} [options.policy] - Payment policy overrides
+   * @param {string|object} [optionsOrApiBase] - API base URL string, or options object
+   * @param {string} [optionsOrApiBase.apiBase] - Base URL of a NIP-30386 reputation API
+   * @param {string} [optionsOrApiBase.discoverUrl] - Override URL for /discover endpoint (auto-derived from apiBase)
+   * @param {number} [optionsOrApiBase.timeoutMs=10000] - Request timeout
+   * @param {object} [optionsOrApiBase.policy] - Payment policy overrides
    */
-  constructor(options = {}) {
+  constructor(optionsOrApiBase = {}) {
+    const options = typeof optionsOrApiBase === 'string'
+      ? { apiBase: optionsOrApiBase }
+      : optionsOrApiBase;
     this.apiBase = (options.apiBase || DEFAULT_API).replace(/\/+$/, '');
     // discoverUrl: explicit override, or derive by replacing last path segment
     this.discoverUrl = options.discoverUrl || 
