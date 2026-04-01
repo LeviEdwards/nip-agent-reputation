@@ -785,7 +785,7 @@ function handleDocs() {
     status: 200,
     data: {
       name: 'NIP Agent Reputation API',
-      version: '1.0.11',
+      version: '1.0.12',
       spec: 'https://github.com/LeviEdwards/nip-agent-reputation/blob/main/NIP-XX.md',
       kind: ATTESTATION_KIND,
       endpoints: {

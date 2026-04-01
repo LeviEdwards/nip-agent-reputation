@@ -236,11 +236,19 @@ test('missing l attestation label warns', () => {
 
 // --- node_pubkey and p tags ---
 
-test('invalid node_pubkey (64 hex) fails', () => {
+test('node_pubkey 64 hex (Nostr pubkey) is valid with note', () => {
   const evt = validAttestation();
   evt.tags = evt.tags.map(t => t[0] === 'node_pubkey' ? ['node_pubkey', 'f'.repeat(64)] : t);
   const r = validateAttestation(evt);
-  assert(!r.valid, 'should be invalid');
+  assert(r.valid, 'should be valid (64-hex is a Nostr x-only pubkey)');
+  assert(r.info.some(e => e.code === 'NODE_PUBKEY_64HEX'), 'has NODE_PUBKEY_64HEX note');
+});
+
+test('node_pubkey invalid length fails', () => {
+  const evt = validAttestation();
+  evt.tags = evt.tags.map(t => t[0] === 'node_pubkey' ? ['node_pubkey', 'f'.repeat(50)] : t);
+  const r = validateAttestation(evt);
+  assert(!r.valid, 'should be invalid (50 hex is neither 64 nor 66)');
   assert(r.errors.some(e => e.code === 'INVALID_NODE_PUBKEY'), 'has INVALID_NODE_PUBKEY');
 });
 

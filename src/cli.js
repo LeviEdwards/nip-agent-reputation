@@ -105,8 +105,10 @@ async function main() {
       return cmdServe();
     case 'billing':
       return cmdBilling();
+    case 'scan':
+      return cmdScan();
     default:
-      console.log(`NIP Agent Reputation — Reference Implementation v1.0.11
+      console.log(`NIP Agent Reputation — Reference Implementation v1.0.12
 
 Usage:
   node src/cli.js collect              Gather LND metrics (dry run)
@@ -159,6 +161,12 @@ Recurring billing:
   node src/cli.js billing                          Show billing status
   node src/cli.js billing --due                    Show accounts currently due for invoicing
   node src/cli.js billing --accounts               List all billing accounts with details
+
+Protocol scan:
+  node src/cli.js scan                             Scan relays for all kind 30386 events
+  node src/cli.js scan --relays <url1,url2>        Scan specific relays
+  node src/cli.js scan --json                      Output as JSON
+  node src/cli.js scan --validate                  Run full validation on every event
 `);
       process.exit(1);
   }
@@ -896,6 +904,241 @@ async function cmdBilling() {
 
   console.log('\nRun: node src/cli.js billing --accounts  for full account details');
   console.log('Run: node scripts/run-billing.js --dry-run  to preview billing cycle\n');
+}
+
+async function cmdScan() {
+  const args = process.argv.slice(3);
+  const jsonOutput = args.includes('--json');
+  const doValidate = args.includes('--validate');
+
+  // Parse relay list
+  const relayIdx = args.indexOf('--relays');
+  const DEFAULT_RELAYS = ['wss://nos.lol', 'wss://relay.damus.io', 'wss://relay.primal.net', 'wss://relay.snort.social'];
+  const relays = relayIdx !== -1 && args[relayIdx + 1]
+    ? args[relayIdx + 1].split(',')
+    : DEFAULT_RELAYS;
+
+  const LEGACY_KINDS = [30385, 30388, 30078];
+  const ALL_KINDS = [30386, ...LEGACY_KINDS];
+
+  if (!jsonOutput) {
+    console.log(`\n  NIP-30386 Protocol Scan`);
+    console.log(`  ${new Date().toISOString()}`);
+    console.log(`  Relays: ${relays.join(', ')}\n`);
+  }
+
+  // Connect to each relay and collect events
+  const { default: WebSocket } = await import('ws');
+  const allEvents = new Map(); // id -> event (dedup)
+  const relayResults = {};
+
+  for (const url of relays) {
+    if (!jsonOutput) process.stdout.write(`  Connecting to ${url}... `);
+    try {
+      const events = await new Promise((resolve, reject) => {
+        const collected = [];
+        const ws = new WebSocket(url);
+        const timer = setTimeout(() => { ws.close(); reject(new Error('timeout')); }, 15000);
+
+        ws.on('open', () => {
+          ws.send(JSON.stringify(['REQ', 'scan', { kinds: ALL_KINDS, '#L': ['agent-reputation'], limit: 500 }]));
+          // Also query without L tag filter (catches non-compliant events)
+          ws.send(JSON.stringify(['REQ', 'scan2', { kinds: [30386], limit: 500 }]));
+        });
+
+        let eoseCount = 0;
+        ws.on('message', (data) => {
+          try {
+            const msg = JSON.parse(data.toString());
+            if (msg[0] === 'EVENT') collected.push(msg[2]);
+            if (msg[0] === 'EOSE') {
+              eoseCount++;
+              if (eoseCount >= 2) { clearTimeout(timer); ws.close(); resolve(collected); }
+            }
+          } catch (e) { /* skip malformed */ }
+        });
+        ws.on('error', (err) => { clearTimeout(timer); reject(err); });
+        ws.on('close', () => { clearTimeout(timer); resolve(collected); });
+      });
+
+      relayResults[url] = events.length;
+      for (const ev of events) allEvents.set(ev.id, ev);
+      if (!jsonOutput) console.log(`${events.length} events`);
+    } catch (err) {
+      relayResults[url] = -1;
+      if (!jsonOutput) console.log(`FAILED (${err.message})`);
+    }
+  }
+
+  const events = Array.from(allEvents.values());
+  if (!jsonOutput) console.log(`\n  Total unique events: ${events.length}`);
+
+  // Analyze events
+  const publishers = {};
+  const kinds = {};
+  const types = {};
+  const dimensions = {};
+  const serviceTypes = {};
+  const ageHours = [];
+  let hasLTag = 0;
+  let haslTag = 0;
+  let hasNodePubkey = 0;
+  let hasPTag = 0;
+  let hasHalfLife = 0;
+  let hasSampleWindow = 0;
+  let hasContent = 0;
+  let validationResults = [];
+
+  for (const ev of events) {
+    // Publisher stats
+    if (!publishers[ev.pubkey]) publishers[ev.pubkey] = { count: 0, firstSeen: ev.created_at, lastSeen: ev.created_at };
+    publishers[ev.pubkey].count++;
+    publishers[ev.pubkey].firstSeen = Math.min(publishers[ev.pubkey].firstSeen, ev.created_at);
+    publishers[ev.pubkey].lastSeen = Math.max(publishers[ev.pubkey].lastSeen, ev.created_at);
+
+    // Kind distribution
+    kinds[ev.kind] = (kinds[ev.kind] || 0) + 1;
+
+    // Tag analysis
+    const tags = ev.tags || [];
+    const getTag = (name) => tags.find(t => t[0] === name);
+    const getAllTags = (name) => tags.filter(t => t[0] === name);
+
+    const typeTag = getTag('attestation_type');
+    if (typeTag) types[typeTag[1]] = (types[typeTag[1]] || 0) + 1;
+
+    const stTag = getTag('service_type');
+    if (stTag) serviceTypes[stTag[1]] = (serviceTypes[stTag[1]] || 0) + 1;
+
+    const dimTags = getAllTags('dimension');
+    for (const dt of dimTags) {
+      const name = dt[1];
+      if (name) dimensions[name] = (dimensions[name] || 0) + 1;
+    }
+
+    if (getTag('L')) hasLTag++;
+    if (tags.some(t => t[0] === 'l' && t.length >= 3 && t[2] === 'agent-reputation')) haslTag++;
+    if (getTag('node_pubkey')) hasNodePubkey++;
+    if (getTag('p')) hasPTag++;
+    if (getTag('half_life_hours')) hasHalfLife++;
+    if (getTag('sample_window_hours')) hasSampleWindow++;
+    if (ev.content && ev.content.length > 0) hasContent++;
+
+    const ageH = (Date.now() / 1000 - ev.created_at) / 3600;
+    ageHours.push(ageH);
+
+    // Optional: full validation
+    if (doValidate) {
+      const result = validateAttestation(ev);
+      validationResults.push({ id: ev.id, pubkey: ev.pubkey, valid: result.valid, errors: result.errors, warnings: result.warnings, info: result.info });
+    }
+  }
+
+  const n = events.length || 1; // avoid div-by-zero
+  const pubCount = Object.keys(publishers).length;
+
+  if (jsonOutput) {
+    const report = {
+      timestamp: new Date().toISOString(),
+      relays: relayResults,
+      totalEvents: events.length,
+      uniquePublishers: pubCount,
+      publishers: Object.fromEntries(
+        Object.entries(publishers).map(([pk, v]) => [pk.slice(0, 16) + '...', {
+          events: v.count,
+          firstSeen: new Date(v.firstSeen * 1000).toISOString(),
+          lastSeen: new Date(v.lastSeen * 1000).toISOString(),
+          lastSeenHoursAgo: Math.round((Date.now() / 1000 - v.lastSeen) / 36) / 100
+        }])
+      ),
+      kinds,
+      attestationTypes: types,
+      serviceTypes,
+      dimensions,
+      compliance: {
+        hasLTag: Math.round(hasLTag / n * 100),
+        haslTag: Math.round(haslTag / n * 100),
+        hasNodePubkey: Math.round(hasNodePubkey / n * 100),
+        hasPTag: Math.round(hasPTag / n * 100),
+        hasHalfLife: Math.round(hasHalfLife / n * 100),
+        hasSampleWindow: Math.round(hasSampleWindow / n * 100),
+        hasContent: Math.round(hasContent / n * 100),
+      },
+      validation: doValidate ? {
+        passed: validationResults.filter(r => r.valid).length,
+        failed: validationResults.filter(r => !r.valid).length,
+        warnings: validationResults.reduce((sum, r) => sum + (r.warnings || []).length, 0),
+        errors: validationResults.reduce((sum, r) => sum + (r.errors || []).length, 0),
+      } : undefined,
+    };
+    console.log(JSON.stringify(report, null, 2));
+  } else {
+    // Pretty print
+    console.log(`\n  ═══════════════════════════════════════════`);
+    console.log(`  Publishers: ${pubCount}`);
+    console.log(`  ───────────────────────────────────────────`);
+    for (const [pk, v] of Object.entries(publishers)) {
+      const lastAgo = Math.round((Date.now() / 1000 - v.lastSeen) / 3600);
+      console.log(`    ${pk.slice(0, 16)}...  ${v.count} events  (last: ${lastAgo}h ago)`);
+    }
+
+    console.log(`\n  Kind Distribution:`);
+    for (const [k, c] of Object.entries(kinds)) {
+      const label = k === '30386' ? '30386 (current)' : `${k} (legacy)`;
+      console.log(`    ${label}: ${c}`);
+    }
+
+    console.log(`\n  Attestation Types:`);
+    for (const [t, c] of Object.entries(types)) console.log(`    ${t}: ${c}`);
+
+    console.log(`\n  Service Types:`);
+    for (const [s, c] of Object.entries(serviceTypes)) console.log(`    ${s}: ${c}`);
+
+    console.log(`\n  Dimensions Used:`);
+    for (const [d, c] of Object.entries(dimensions).sort((a, b) => b[1] - a[1])) {
+      console.log(`    ${d}: ${c} attestations`);
+    }
+
+    console.log(`\n  Tag Compliance (% of events):`);
+    console.log(`    L tag (namespace):      ${Math.round(hasLTag / n * 100)}%`);
+    console.log(`    l tag (label):          ${Math.round(haslTag / n * 100)}%`);
+    console.log(`    node_pubkey:            ${Math.round(hasNodePubkey / n * 100)}%`);
+    console.log(`    p tag:                  ${Math.round(hasPTag / n * 100)}%`);
+    console.log(`    half_life_hours:        ${Math.round(hasHalfLife / n * 100)}%`);
+    console.log(`    sample_window_hours:    ${Math.round(hasSampleWindow / n * 100)}%`);
+    console.log(`    content (non-empty):    ${Math.round(hasContent / n * 100)}%`);
+
+    if (ageHours.length > 0) {
+      const newest = Math.min(...ageHours);
+      const oldest = Math.max(...ageHours);
+      const median = ageHours.sort((a, b) => a - b)[Math.floor(ageHours.length / 2)];
+      console.log(`\n  Age Distribution:`);
+      console.log(`    Newest: ${Math.round(newest)}h ago`);
+      console.log(`    Median: ${Math.round(median)}h ago`);
+      console.log(`    Oldest: ${Math.round(oldest)}h ago`);
+    }
+
+    if (doValidate) {
+      const passed = validationResults.filter(r => r.valid).length;
+      const failed = validationResults.filter(r => !r.valid).length;
+      const warns = validationResults.reduce((sum, r) => sum + (r.warnings || []).length, 0);
+      console.log(`\n  Validation Results:`);
+      console.log(`    Passed: ${passed}/${events.length}`);
+      console.log(`    Failed: ${failed}/${events.length}`);
+      console.log(`    Total warnings: ${warns}`);
+      if (failed > 0) {
+        console.log(`\n  Failed Events:`);
+        for (const r of validationResults.filter(r => !r.valid)) {
+          console.log(`    ${r.id.slice(0, 16)}... (${r.pubkey.slice(0, 12)}...)`);
+          for (const e of (r.errors || [])) console.log(`      ✗ ${typeof e === 'object' ? e.message || e.code || JSON.stringify(e) : e}`);
+        }
+      }
+    }
+
+    console.log(`\n  ═══════════════════════════════════════════\n`);
+  }
+
+  process.exit(0);
 }
 
 main().catch(err => {

@@ -97,7 +97,7 @@ Example of an observer attesting a Lightning node's uptime and capacity:
 | --- | -------- | ----------- |
 | `d` | YES | `<subject_pubkey>:<service_type>` — identifies the subject and service |
 | `p` | NO | Subject's Nostr pubkey (32-byte hex). Used for relay indexing via `#p` filter |
-| `node_pubkey` | NO | Subject's Lightning node pubkey (33-byte compressed secp256k1, 66 hex chars). Nostr `p` tags MUST NOT contain node pubkeys |
+| `node_pubkey` | NO | Subject's public key. For Lightning nodes: 33-byte compressed secp256k1 (66 hex chars). For non-LN services: 32-byte x-only pubkey (64 hex chars) is acceptable. Nostr `p` tags MUST NOT contain node pubkeys |
 | `service_type` | YES | Free-text service identifier (see [Service Types](#service-types)) |
 | `attestation_type` | YES | One of `self`, `bilateral`, `observer` (see [Attestation Types](#attestation-types)) |
 | `dimension` | YES (1+) | Metric observation: `["dimension", "<name>", "<value>", "<sample_size>"]` |

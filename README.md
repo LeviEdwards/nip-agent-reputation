@@ -4,8 +4,8 @@ A Nostr protocol and reference implementation for agent reputation on Lightning 
 
 Trust is earned through verifiable economic behavior — payment settlements, uptime, service delivery — not social signals.
 
-[![Tests](https://img.shields.io/badge/tests-542%20passing-brightgreen)](#testing)
-[![Version](https://img.shields.io/badge/version-1.0.11-blue)](package.json)
+[![Tests](https://img.shields.io/badge/tests-544%20passing-brightgreen)](#testing)
+[![Version](https://img.shields.io/badge/version-1.0.12-blue)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## What This Is
@@ -212,6 +212,14 @@ npx nip-agent-reputation server --port 3386
 | `GET` | `/reputation/directory` | Full service directory |
 | `GET` | `/playground` | Interactive validator &amp; explorer |
 
+### CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `scan` | Scan relays for all kind 30386 events |
+| `scan --validate` | Scan + validate every event |
+| `scan --json` | Machine-readable JSON output |
+
 ## Conformance Testing
 
 Test any NIP-30386 implementation:
@@ -245,7 +253,7 @@ NOSTR_NSEC=nsec1... node examples/publish-attestation.js
 ## Testing
 
 ```bash
-# Full suite (13 suites, 542+ tests)
+# Full suite (13 suites, 544+ tests)
 npm test
 
 # Individual suites
@@ -265,7 +273,25 @@ node test/test-sdk-live.js --public  # 13 tests against public proxy
 bash scripts/smoke-test.sh   # 10 endpoint checks
 ```
 
-**542+ tests total** across 13 suites, all passing.
+**544+ tests total** across 13 suites, all passing.
+
+## Protocol Scan
+
+Scan all relays for kind 30386 events and report protocol health:
+
+```bash
+# Basic scan
+node src/cli.js scan
+
+# With full validation
+node src/cli.js scan --validate
+
+# JSON output for automation
+node src/cli.js scan --json
+
+# Custom relays
+node src/cli.js scan --relays wss://nos.lol,wss://relay.damus.io
+```
 
 ## Live Deployment
 

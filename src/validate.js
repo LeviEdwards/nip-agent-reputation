@@ -208,11 +208,16 @@ export function validateAttestation(event, opts = {}) {
 
   // --- Pubkey tags ---
 
-  // node_pubkey tag (LND 33-byte compressed pubkey)
+  // node_pubkey tag (66-hex LN compressed pubkey or 64-hex Nostr/secp256k1 pubkey)
   const nodePubkey = getTag(tags, 'node_pubkey');
   if (nodePubkey) {
-    if (nodePubkey.length !== 66 || !/^[0-9a-f]{66}$/.test(nodePubkey)) {
-      result.error('INVALID_NODE_PUBKEY', `node_pubkey must be 66 hex chars (33-byte compressed secp256k1), got ${nodePubkey.length}`);
+    if (nodePubkey.length === 66 && /^[0-9a-f]{66}$/.test(nodePubkey)) {
+      // Valid 33-byte compressed secp256k1 (Lightning node pubkey)
+    } else if (nodePubkey.length === 64 && /^[0-9a-f]{64}$/.test(nodePubkey)) {
+      // Valid 32-byte x-only pubkey (Nostr pubkey, used for non-LN services)
+      result.note('NODE_PUBKEY_64HEX', 'node_pubkey is 64-hex (Nostr x-only pubkey); 66-hex preferred for Lightning nodes');
+    } else {
+      result.error('INVALID_NODE_PUBKEY', `node_pubkey must be 64 or 66 hex chars, got ${nodePubkey.length}`);
     }
   }
 
