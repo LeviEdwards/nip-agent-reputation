@@ -453,6 +453,331 @@ async function handleValidate(body) {
   }
 }
 
+// --- Route: GET /playground ---
+
+function handlePlayground() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NIP-30386 Playground — Agent Reputation Protocol</title>
+<style>
+  :root { --bg: #0d1117; --fg: #e6edf3; --accent: #f7931a; --green: #3fb950; --red: #f85149; --dim: #8b949e; --card: #161b22; --border: #30363d; --input: #0d1117; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace; background: var(--bg); color: var(--fg); line-height: 1.6; padding: 2rem; max-width: 960px; margin: 0 auto; }
+  h1 { color: var(--accent); font-size: 1.5rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--dim); font-size: 0.9rem; margin-bottom: 2rem; }
+  .tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid var(--border); }
+  .tab { padding: 0.75rem 1.5rem; cursor: pointer; color: var(--dim); border: 1px solid transparent; border-bottom: none; background: none; font-size: 0.9rem; font-family: inherit; border-radius: 6px 6px 0 0; }
+  .tab:hover { color: var(--fg); }
+  .tab.active { color: var(--accent); border-color: var(--border); background: var(--card); border-bottom: 1px solid var(--card); margin-bottom: -1px; }
+  .panel { display: none; background: var(--card); border: 1px solid var(--border); border-top: none; border-radius: 0 0 6px 6px; padding: 1.5rem; }
+  .panel.active { display: block; }
+  textarea { width: 100%; min-height: 300px; background: var(--input); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; padding: 0.75rem; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem; resize: vertical; }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  button { background: var(--accent); color: #000; border: none; padding: 0.6rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.9rem; margin-top: 0.75rem; font-family: inherit; }
+  button:hover { opacity: 0.9; }
+  button.secondary { background: var(--border); color: var(--fg); }
+  .result { margin-top: 1rem; padding: 1rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; }
+  .result.ok { background: #0d1f0d; border: 1px solid var(--green); }
+  .result.err { background: #1f0d0d; border: 1px solid var(--red); }
+  .result.neutral { background: var(--input); border: 1px solid var(--border); }
+  input[type=text] { width: 100%; background: var(--input); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; padding: 0.6rem; font-family: monospace; font-size: 0.9rem; margin-bottom: 0.75rem; }
+  input[type=text]:focus { outline: none; border-color: var(--accent); }
+  label { color: var(--dim); font-size: 0.85rem; display: block; margin-bottom: 0.25rem; }
+  .row { display: flex; gap: 1rem; align-items: flex-end; }
+  .row > div { flex: 1; }
+  .badge-preview { margin-top: 1rem; text-align: center; }
+  .badge-preview img { max-width: 200px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+  .stat { background: var(--input); border: 1px solid var(--border); border-radius: 4px; padding: 0.75rem; text-align: center; }
+  .stat .num { font-size: 1.5rem; font-weight: bold; color: var(--accent); }
+  .stat .lbl { font-size: 0.75rem; color: var(--dim); }
+  .template-btn { background: var(--border); color: var(--fg); padding: 0.4rem 0.8rem; border: none; border-radius: 3px; cursor: pointer; font-size: 0.8rem; margin: 0.25rem; font-family: inherit; }
+  .template-btn:hover { background: var(--dim); }
+  a { color: var(--accent); }
+  .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--dim); font-size: 0.8rem; text-align: center; }
+</style>
+</head>
+<body>
+<h1>⚡ NIP-30386 Playground</h1>
+<p class="subtitle">Interactive validator &amp; explorer for the Agent Reputation protocol on Nostr + Lightning</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('validate')">Validate</button>
+  <button class="tab" onclick="showTab('query')">Query</button>
+  <button class="tab" onclick="showTab('discover')">Discover</button>
+  <button class="tab" onclick="showTab('templates')">Templates</button>
+</div>
+
+<!-- VALIDATE TAB -->
+<div id="tab-validate" class="panel active">
+  <p style="color:var(--dim);margin-bottom:0.75rem;">Paste a NIP-30386 attestation event (JSON) and validate it against the spec:</p>
+  <div style="margin-bottom:0.5rem;">
+    <span style="color:var(--dim);font-size:0.8rem;">Load template:</span>
+    <button class="template-btn" onclick="loadTemplate('self')">Self</button>
+    <button class="template-btn" onclick="loadTemplate('observer')">Observer</button>
+    <button class="template-btn" onclick="loadTemplate('bilateral')">Bilateral</button>
+    <button class="template-btn" onclick="loadTemplate('handler')">Handler (31990)</button>
+  </div>
+  <textarea id="validate-input" placeholder='{"kind":30386,"pubkey":"...","tags":[...],...}'></textarea>
+  <button onclick="runValidate()">Validate Event</button>
+  <div id="validate-result"></div>
+</div>
+
+<!-- QUERY TAB -->
+<div id="tab-query" class="panel">
+  <label>Agent pubkey (64-hex, 66-hex LND, or npub):</label>
+  <input type="text" id="query-pubkey" placeholder="03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f">
+  <div class="row">
+    <div>
+      <label>Amount (sats) for payment gate:</label>
+      <input type="text" id="query-amount" placeholder="5000" value="5000">
+    </div>
+    <div style="flex:0 0 auto;">
+      <button onclick="runQuery()">Query Reputation</button>
+    </div>
+  </div>
+  <div id="query-result"></div>
+  <div class="badge-preview" id="badge-preview"></div>
+</div>
+
+<!-- DISCOVER TAB -->
+<div id="tab-discover" class="panel">
+  <label>Service type filter (optional):</label>
+  <input type="text" id="discover-type" placeholder="lightning-node">
+  <button onclick="runDiscover()">Discover Agents</button>
+  <div id="discover-result"></div>
+</div>
+
+<!-- TEMPLATES TAB -->
+<div id="tab-templates" class="panel">
+  <h3 style="color:var(--accent);margin-bottom:1rem;">Event Templates</h3>
+  <p style="color:var(--dim);margin-bottom:1rem;">Copy these templates, fill in your values, sign with your Nostr key, and publish. See <a href="https://github.com/LeviEdwards/nip-agent-reputation/blob/main/IMPLEMENTING.md">IMPLEMENTING.md</a> for details.</p>
+
+  <h4 style="margin:1rem 0 0.5rem;">Self-Attestation (Kind 30386)</h4>
+  <pre class="result neutral" id="tpl-self"></pre>
+
+  <h4 style="margin:1rem 0 0.5rem;">Observer Attestation (Kind 30386)</h4>
+  <pre class="result neutral" id="tpl-observer"></pre>
+
+  <h4 style="margin:1rem 0 0.5rem;">Bilateral Attestation (Kind 30386)</h4>
+  <pre class="result neutral" id="tpl-bilateral"></pre>
+
+  <h4 style="margin:1rem 0 0.5rem;">Service Handler (Kind 31990)</h4>
+  <pre class="result neutral" id="tpl-handler"></pre>
+</div>
+
+<div class="footer">
+  NIP-30386 Agent Reputation Protocol &mdash;
+  <a href="https://github.com/LeviEdwards/nip-agent-reputation">GitHub</a> &middot;
+  <a href="/">API Docs</a> &middot;
+  <a href="/directory">Directory</a> &middot;
+  Kind 30386 on Nostr
+</div>
+
+<script>
+const API = location.origin;
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', t.textContent.toLowerCase().includes(name.slice(0,4))));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// --- Templates ---
+const TEMPLATES = {
+  self: {
+    kind: 30386,
+    pubkey: "<YOUR-64-HEX-NOSTR-PUBKEY>",
+    created_at: Math.floor(Date.now()/1000),
+    tags: [
+      ["d", "<YOUR-LN-PUBKEY>:lightning-node"],
+      ["L", "agent-reputation"],
+      ["l", "attestation", "agent-reputation"],
+      ["attestation_type", "self"],
+      ["service_type", "lightning-node"],
+      ["node_pubkey", "<YOUR-66-HEX-LN-PUBKEY>"],
+      ["p", "<YOUR-64-HEX-NOSTR-PUBKEY>"],
+      ["half_life_hours", "720"],
+      ["sample_window_hours", "24"],
+      ["dimension", "uptime_percent", "99.5", "30"],
+      ["dimension", "payment_success_rate", "0.98", "100"]
+    ],
+    content: JSON.stringify({type:"self",summary:"Self-reported Lightning node metrics"})
+  },
+  observer: {
+    kind: 30386,
+    pubkey: "<OBSERVER-64-HEX-NOSTR-PUBKEY>",
+    created_at: Math.floor(Date.now()/1000),
+    tags: [
+      ["d", "<SUBJECT-LN-PUBKEY>:lightning-node"],
+      ["L", "agent-reputation"],
+      ["l", "attestation", "agent-reputation"],
+      ["attestation_type", "observer"],
+      ["service_type", "lightning-node"],
+      ["node_pubkey", "<SUBJECT-66-HEX-LN-PUBKEY>"],
+      ["p", "<SUBJECT-64-HEX-NOSTR-PUBKEY>"],
+      ["half_life_hours", "720"],
+      ["sample_window_hours", "24"],
+      ["dimension", "uptime_percent", "99.0", "50"],
+      ["dimension", "response_time_ms", "150", "50"]
+    ],
+    content: JSON.stringify({type:"observer",summary:"Independent monitoring results",probeCount:50,windowHours:168})
+  },
+  bilateral: {
+    kind: 30386,
+    pubkey: "<ATTESTER-64-HEX-NOSTR-PUBKEY>",
+    created_at: Math.floor(Date.now()/1000),
+    tags: [
+      ["d", "<COUNTERPARTY-LN-PUBKEY>:api-provider"],
+      ["L", "agent-reputation"],
+      ["l", "attestation", "agent-reputation"],
+      ["attestation_type", "bilateral"],
+      ["service_type", "api-provider"],
+      ["node_pubkey", "<COUNTERPARTY-66-HEX-LN-PUBKEY>"],
+      ["p", "<COUNTERPARTY-64-HEX-NOSTR-PUBKEY>"],
+      ["half_life_hours", "720"],
+      ["sample_window_hours", "168"],
+      ["dimension", "settlement_rate", "0.95", "20"],
+      ["dimension", "response_time_ms", "250", "20"],
+      ["dimension", "dispute_rate", "0.05", "20"]
+    ],
+    content: JSON.stringify({type:"bilateral",summary:"Post-transaction attestation based on 20 Lightning payments"})
+  },
+  handler: {
+    kind: 31990,
+    pubkey: "<YOUR-64-HEX-NOSTR-PUBKEY>",
+    created_at: Math.floor(Date.now()/1000),
+    tags: [
+      ["d", "my-agent-service"],
+      ["k", "5600"],
+      ["L", "agent-reputation"],
+      ["l", "handler", "agent-reputation"],
+      ["description", "My Lightning-powered API service"],
+      ["price", "100", "sats", "per-request"],
+      ["protocol", "L402"],
+      ["endpoint", "https://my-api.example.com"],
+      ["node_pubkey", "<YOUR-66-HEX-LN-PUBKEY>"]
+    ],
+    content: JSON.stringify({name:"My Agent Service",description:"Discoverable via NIP-30386"})
+  }
+};
+
+function fmt(obj) { return JSON.stringify(obj, null, 2); }
+
+// Populate templates
+document.getElementById('tpl-self').textContent = fmt(TEMPLATES.self);
+document.getElementById('tpl-observer').textContent = fmt(TEMPLATES.observer);
+document.getElementById('tpl-bilateral').textContent = fmt(TEMPLATES.bilateral);
+document.getElementById('tpl-handler').textContent = fmt(TEMPLATES.handler);
+
+function loadTemplate(type) {
+  document.getElementById('validate-input').value = fmt(TEMPLATES[type]);
+}
+
+// --- Validate ---
+async function runValidate() {
+  const el = document.getElementById('validate-result');
+  const input = document.getElementById('validate-input').value.trim();
+  if (!input) { el.className='result err'; el.textContent='Paste a JSON event first.'; return; }
+  try {
+    const body = JSON.parse(input);
+    const resp = await fetch(API + '/validate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await resp.json();
+    if (data.results) {
+      // batch
+      let out = 'Batch: ' + data.results.length + ' event(s)\\n\\n';
+      data.results.forEach((r,i) => { out += '--- Event '+(i+1)+' ---\\n' + formatValidation(r) + '\\n'; });
+      el.className = 'result ' + (data.results.every(r=>r.valid)?'ok':'err');
+      el.textContent = out;
+    } else {
+      el.className = 'result ' + (data.valid?'ok':'err');
+      el.textContent = formatValidation(data);
+    }
+  } catch(e) { el.className='result err'; el.textContent='Error: '+e.message; }
+}
+
+function formatValidation(d) {
+  let out = (d.valid ? '✅ VALID' : '❌ INVALID') + '\\n';
+  if (d.kind) out += 'Kind: '+d.kind+'\\n';
+  if (d.errors?.length) out += '\\nErrors:\\n' + d.errors.map(e=>'  ✗ '+e).join('\\n') + '\\n';
+  if (d.warnings?.length) out += '\\nWarnings:\\n' + d.warnings.map(w=>'  ⚠ '+w).join('\\n') + '\\n';
+  if (d.info?.length) out += '\\nInfo:\\n' + d.info.map(i=>'  ℹ '+i).join('\\n') + '\\n';
+  return out;
+}
+
+// --- Query ---
+async function runQuery() {
+  const el = document.getElementById('query-result');
+  const badge = document.getElementById('badge-preview');
+  const pubkey = document.getElementById('query-pubkey').value.trim();
+  const amount = parseInt(document.getElementById('query-amount').value) || 5000;
+  if (!pubkey) { el.className='result err'; el.textContent='Enter a pubkey.'; return; }
+  try {
+    const resp = await fetch(API + '/reputation/' + pubkey);
+    const data = await resp.json();
+    let out = 'Pubkey: ' + pubkey + '\\n';
+    out += 'Trust level: ' + (data.trustLevel || 'none') + '\\n';
+    out += 'Attestations: ' + (data.attestationCount || 0) + '\\n';
+    out += 'Attesters: ' + (data.attesterCount || 0) + '\\n';
+    out += 'Total weight: ' + (data.totalWeight?.toFixed(2) || '0') + '\\n';
+    if (data.dimensions && Object.keys(data.dimensions).length) {
+      out += '\\nDimensions:\\n';
+      for (const [k,v] of Object.entries(data.dimensions)) {
+        const val = typeof v === 'object' ? v.weightedAvg : v;
+        const n = typeof v === 'object' ? v.numAttesters : '?';
+        out += '  ' + k + ': ' + (typeof val==='number'?val.toFixed(2):val) + ' (' + n + ' attester(s))\\n';
+      }
+    }
+    // Payment gate
+    out += '\\n--- Payment Gate (' + amount + ' sats) ---\\n';
+    const tw = data.totalWeight || 0;
+    const sr = data.dimensions?.settlement_rate?.weightedAvg ?? data.dimensions?.payment_success_rate?.weightedAvg ?? null;
+    if (tw === 0 && amount <= 100) out += '✅ ALLOW (blind payment under 100 sats)\\n';
+    else if (tw === 0) out += '❌ DENY (no reputation data for ' + amount + ' sats)\\n';
+    else if (sr !== null && sr < 0.9) out += '❌ DENY (settlement rate ' + sr.toFixed(2) + ' < 0.90)\\n';
+    else if (tw < 0.3) out += '⚠️ CAUTION (low confidence, weight ' + tw.toFixed(2) + ')\\n';
+    else out += '✅ ALLOW (trust: ' + (data.trustLevel||'unknown') + ', weight: ' + tw.toFixed(2) + ')\\n';
+
+    el.className = 'result ' + (tw > 0 ? 'ok' : 'neutral');
+    el.textContent = out;
+
+    // Show badge
+    badge.innerHTML = '<p style="color:var(--dim);font-size:0.85rem;">Embeddable badge:</p><img src="' + API + '/reputation/badge/' + pubkey + '" alt="reputation badge"><br><code style="font-size:0.75rem;color:var(--dim);">&lt;img src=&quot;' + API + '/reputation/badge/' + pubkey + '&quot;&gt;</code>';
+  } catch(e) { el.className='result err'; el.textContent='Error: '+e.message; badge.innerHTML=''; }
+}
+
+// --- Discover ---
+async function runDiscover() {
+  const el = document.getElementById('discover-result');
+  const type = document.getElementById('discover-type').value.trim();
+  const url = API + '/discover' + (type ? '?type='+encodeURIComponent(type) : '');
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const services = data.services || data;
+    if (!services?.length) { el.className='result neutral'; el.textContent='No services found.'; return; }
+    let out = 'Found ' + services.length + ' service(s):\\n\\n';
+    services.forEach((s,i) => {
+      out += (i+1) + '. ' + (s.serviceId || s.service_type || '?') + '\\n';
+      out += '   Pubkey: ' + (s.pubkey||'?').slice(0,20) + '...\\n';
+      if (s.description) out += '   ' + s.description.slice(0,80) + '\\n';
+      if (s.protocol) out += '   Protocol: ' + s.protocol + '\\n';
+      if (s.endpoint) out += '   Endpoint: ' + s.endpoint + '\\n';
+      if (s.price) out += '   Price: ' + s.price.amount + ' ' + (s.price.unit||'sats') + '\\n';
+      out += '\\n';
+    });
+    el.className = 'result ok';
+    el.textContent = out;
+  } catch(e) { el.className='result err'; el.textContent='Error: '+e.message; }
+}
+</script>
+</body>
+</html>`;
+}
+
 // --- Route: GET / ---
 
 function handleDocs() {
@@ -460,7 +785,7 @@ function handleDocs() {
     status: 200,
     data: {
       name: 'NIP Agent Reputation API',
-      version: '1.0.10',
+      version: '1.0.11',
       spec: 'https://github.com/LeviEdwards/nip-agent-reputation/blob/main/NIP-XX.md',
       kind: ATTESTATION_KIND,
       endpoints: {
@@ -596,6 +921,17 @@ export function createServer(options = {}) {
         return;
       }
 
+      // Route: GET /playground
+      if (pathname === '/playground' && req.method === 'GET') {
+        const result = handlePlayground();
+        res.writeHead(200, {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
+        });
+        res.end(result);
+        return;
+      }
+
       // Route: POST /validate
       if (pathname === '/validate' && req.method === 'POST') {
         const body = await readBody(req);
@@ -605,7 +941,7 @@ export function createServer(options = {}) {
       }
 
       // 404
-      respond(res, 404, { error: 'Not found', availableEndpoints: ['/', '/health', '/reputation/:pubkey', '/reputation/badge/:pubkey', '/directory', '/discover', '/validate'] });
+      respond(res, 404, { error: 'Not found', availableEndpoints: ['/', '/health', '/reputation/:pubkey', '/reputation/badge/:pubkey', '/directory', '/discover', '/validate', '/playground'] });
 
     } catch (err) {
       console.error(`[${new Date().toISOString()}] Error:`, err);

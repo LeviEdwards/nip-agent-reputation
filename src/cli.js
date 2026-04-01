@@ -106,7 +106,7 @@ async function main() {
     case 'billing':
       return cmdBilling();
     default:
-      console.log(`NIP Agent Reputation — Reference Implementation v1.0.10
+      console.log(`NIP Agent Reputation — Reference Implementation v1.0.11
 
 Usage:
   node src/cli.js collect              Gather LND metrics (dry run)

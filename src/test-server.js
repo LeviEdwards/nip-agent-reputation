@@ -320,6 +320,22 @@ async function runTests() {
       assert(res.body.includes('<!DOCTYPE html>'), 'Directory is valid HTML document');
     }
 
+    // === Playground endpoint ===
+    console.log('\n=== Playground endpoint ===');
+    {
+      const res = await fetch('/playground');
+      assert(res.status === 200, 'Playground returns 200');
+      const ct = res.headers['content-type'];
+      assert(ct && ct.includes('text/html'), `Playground content-type is HTML (got ${ct})`);
+      assert(res.body.includes('NIP-30386 Playground'), 'Playground contains title');
+      assert(res.body.includes('<!DOCTYPE html>'), 'Playground is valid HTML');
+      assert(res.body.includes('runValidate'), 'Playground has validate function');
+      assert(res.body.includes('runQuery'), 'Playground has query function');
+      assert(res.body.includes('runDiscover'), 'Playground has discover function');
+      assert(res.body.includes('TEMPLATES'), 'Playground has event templates');
+      assert(res.body.includes('agent-reputation'), 'Playground references agent-reputation namespace');
+    }
+
     // === Method not allowed ===
     console.log('\n=== Wrong HTTP methods ===');
     {

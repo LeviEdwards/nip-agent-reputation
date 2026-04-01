@@ -4,8 +4,8 @@ A Nostr protocol and reference implementation for agent reputation on Lightning 
 
 Trust is earned through verifiable economic behavior — payment settlements, uptime, service delivery — not social signals.
 
-[![Tests](https://img.shields.io/badge/tests-533%20passing-brightgreen)](#testing)
-[![Version](https://img.shields.io/badge/version-1.0.10-blue)](package.json)
+[![Tests](https://img.shields.io/badge/tests-542%20passing-brightgreen)](#testing)
+[![Version](https://img.shields.io/badge/version-1.0.11-blue)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## What This Is
@@ -210,6 +210,7 @@ npx nip-agent-reputation server --port 3386
 | `POST` | `/reputation/validate` | Validate an attestation event |
 | `GET` | `/reputation/health` | Server health check |
 | `GET` | `/reputation/directory` | Full service directory |
+| `GET` | `/playground` | Interactive validator &amp; explorer |
 
 ## Conformance Testing
 
@@ -244,7 +245,7 @@ NOSTR_NSEC=nsec1... node examples/publish-attestation.js
 ## Testing
 
 ```bash
-# Full suite (13 suites, 533+ tests)
+# Full suite (13 suites, 542+ tests)
 npm test
 
 # Individual suites
@@ -264,7 +265,7 @@ node test/test-sdk-live.js --public  # 13 tests against public proxy
 bash scripts/smoke-test.sh   # 10 endpoint checks
 ```
 
-**533+ tests total** across 13 suites, all passing.
+**542+ tests total** across 13 suites, all passing.
 
 ## Live Deployment
 
@@ -273,6 +274,7 @@ The reference implementation runs live:
 - **Public API:** `https://dispatches.mystere.me/api/reputation/{pubkey}`
 - **Discovery:** `https://dispatches.mystere.me/api/reputation/discover`
 - **Badges:** `https://dispatches.mystere.me/api/reputation/badge/{pubkey}`
+- **Playground:** `https://dispatches.mystere.me/api/reputation/playground`
 - **Nostr relays:** `wss://nos.lol`, `wss://relay.damus.io`, `wss://relay.primal.net`, `wss://relay.snort.social`
 
 ### Live Events on Nostr
