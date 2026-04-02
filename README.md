@@ -4,8 +4,8 @@ A Nostr protocol and reference implementation for agent reputation on Lightning 
 
 Trust is earned through verifiable economic behavior — payment settlements, uptime, service delivery — not social signals.
 
-[![Tests](https://img.shields.io/badge/tests-544%20passing-brightgreen)](#testing)
-[![Version](https://img.shields.io/badge/version-1.0.12-blue)](package.json)
+[![Tests](https://img.shields.io/badge/tests-583%20passing-brightgreen)](#testing)
+[![Version](https://img.shields.io/badge/version-1.0.13-blue)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## What This Is
@@ -253,7 +253,7 @@ NOSTR_NSEC=nsec1... node examples/publish-attestation.js
 ## Testing
 
 ```bash
-# Full suite (13 suites, 544+ tests)
+# Full suite (14 suites, 583+ tests)
 npm test
 
 # Individual suites
@@ -273,7 +273,19 @@ node test/test-sdk-live.js --public  # 13 tests against public proxy
 bash scripts/smoke-test.sh   # 10 endpoint checks
 ```
 
-**544+ tests total** across 13 suites, all passing.
+**583+ tests total** across 14 suites, all passing.
+
+### Machine-Readable Test Vectors
+
+`test/fixtures/test-vectors.json` contains portable test vectors for any implementation:
+- Decay formula vectors (10 age/expected pairs)
+- D-tag format validation (valid + invalid)
+- Dimension format (standard + compact)
+- Valid events (self, observer, bilateral, HTTP with 64-hex node_pubkey)
+- Invalid events (missing labels, compact dimension issues)
+- Aggregation vectors (single, bilateral-dominates, stale decay)
+- Type weight verification
+- Handler event validation
 
 ## Protocol Scan
 

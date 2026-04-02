@@ -109,7 +109,7 @@ async function main() {
       if (process.argv.includes('--history')) return cmdScanHistory();
       return cmdScan();
     default:
-      console.log(`NIP Agent Reputation — Reference Implementation v1.0.12
+      console.log(`NIP Agent Reputation — Reference Implementation v1.0.13
 
 Usage:
   node src/cli.js collect              Gather LND metrics (dry run)

@@ -36,6 +36,7 @@ run_suite "Fulfillment"    test/test-fulfill.js
 run_suite "Billing"        test/test-billing.js
 run_suite "SDK"            test/test-sdk.js
 run_suite "Conformance"    test/conformance.js
+run_suite "Fixtures"       test/test-fixtures.js
 
 echo ""
 echo "════════════════════════════════════"

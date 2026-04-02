@@ -40,5 +40,47 @@
       "passed": 56,
       "failed": 1
     }
+  },
+  {
+    "timestamp": "2026-04-02T11:18:01.503Z",
+    "totalEvents": 59,
+    "uniquePublishers": 2,
+    "publishers": {
+      "1bb7ae47020335130b9654e3c13633f92446c4717e859f82b46e6363118c6ead": {
+        "events": 48,
+        "lastSeen": "2026-04-02T11:16:54.000Z"
+      },
+      "c82ba63605e4f94647322ab7f26a4bad25c88fe27f87ed8706ca4082e900c158": {
+        "events": 11,
+        "lastSeen": "2026-03-25T23:56:00.000Z"
+      }
+    },
+    "kinds": {
+      "30078": 4,
+      "30385": 2,
+      "30386": 52,
+      "30388": 1
+    },
+    "attestationTypes": {
+      "observer": 55,
+      "self": 4
+    },
+    "serviceTypes": {
+      "http-endpoint": 39,
+      "lightning-node": 9,
+      "web-agent": 10,
+      "network-data": 1
+    },
+    "dimensionCount": 14,
+    "compliance": {
+      "L": 100,
+      "l": 98,
+      "nodePubkey": 83,
+      "pTag": 76
+    },
+    "validation": {
+      "passed": 58,
+      "failed": 1
+    }
   }
 ]

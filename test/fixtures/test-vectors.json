@@ -1,0 +1,308 @@
+{
+  "description": "NIP-30386 Agent Reputation Attestation test vectors. Use these to validate any implementation.",
+  "version": "1.0.13",
+  "kind": 30386,
+  "legacy_kinds": [30385, 30388, 30078],
+  "namespace": "agent-reputation",
+
+  "decay": {
+    "description": "Exponential decay formula: clamp(2^(-age_hours / half_life_hours), 0, 1)",
+    "half_life_hours": 720,
+    "vectors": [
+      { "age_hours": 0, "expected": 1.0, "tolerance": 0.001 },
+      { "age_hours": 1, "expected": 0.999, "tolerance": 0.001 },
+      { "age_hours": 24, "expected": 0.977, "tolerance": 0.001 },
+      { "age_hours": 168, "expected": 0.851, "tolerance": 0.001 },
+      { "age_hours": 336, "expected": 0.724, "tolerance": 0.001 },
+      { "age_hours": 720, "expected": 0.500, "tolerance": 0.001 },
+      { "age_hours": 1440, "expected": 0.250, "tolerance": 0.001 },
+      { "age_hours": 2160, "expected": 0.125, "tolerance": 0.001 },
+      { "age_hours": 4320, "expected": 0.0156, "tolerance": 0.001 },
+      { "age_hours": -1, "expected": 1.0, "note": "future timestamp: clamp to 1.0" }
+    ]
+  },
+
+  "type_weights": {
+    "description": "Non-normative recommended weights per attestation type",
+    "self": 0.3,
+    "observer": 0.7,
+    "bilateral": 1.0
+  },
+
+  "aggregation": {
+    "description": "Weighted average: sum(value * type_weight * decay_weight) / sum(type_weight * decay_weight)",
+    "vectors": [
+      {
+        "name": "single_self_attestation",
+        "attestations": [
+          { "type": "self", "age_hours": 0, "dimensions": { "payment_success_rate": 0.95 } }
+        ],
+        "expected": {
+          "payment_success_rate": { "value": 0.95, "total_weight": 0.3, "num_attesters": 1 }
+        }
+      },
+      {
+        "name": "bilateral_dominates_self",
+        "attestations": [
+          { "type": "self", "age_hours": 1, "dimensions": { "payment_success_rate": 0.97 } },
+          { "type": "bilateral", "age_hours": 168, "dimensions": { "payment_success_rate": 0.80 } }
+        ],
+        "expected": {
+          "payment_success_rate": {
+            "value_range": [0.83, 0.85],
+            "total_weight_range": [1.1, 1.2],
+            "num_attesters": 2,
+            "note": "bilateral (weight 1.0 * 0.851 decay) should dominate self (weight 0.3 * ~1.0 decay)"
+          }
+        }
+      },
+      {
+        "name": "stale_attestation_decays",
+        "attestations": [
+          { "type": "bilateral", "age_hours": 4320, "dimensions": { "payment_success_rate": 0.99 } }
+        ],
+        "expected": {
+          "payment_success_rate": {
+            "value": 0.99,
+            "total_weight_range": [0.01, 0.02],
+            "num_attesters": 1,
+            "note": "6-month-old attestation has very low effective weight"
+          }
+        }
+      }
+    ]
+  },
+
+  "d_tag": {
+    "description": "d-tag format: <subject_hex_pubkey>:<service_type>",
+    "valid": [
+      "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789:lightning-node",
+      "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789:http-endpoint",
+      "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789:ai-inference"
+    ],
+    "invalid": [
+      "too-short:lightning-node",
+      "ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789:lightning-node",
+      "no-colon-separator"
+    ]
+  },
+
+  "dimension_formats": {
+    "description": "Dimension tags: ['dimension', name, value, sample_size] or compact ['dimension', 'name,value,sample_size']",
+    "standard": ["dimension", "uptime_percent", "99.5", "30"],
+    "compact": ["dimension", "uptime_percent,99.5,30"],
+    "standard_dimensions": [
+      "payment_success_rate",
+      "settlement_rate",
+      "dispute_rate",
+      "uptime_percent",
+      "response_time_ms",
+      "capacity_sats",
+      "num_channels",
+      "channel_availability",
+      "num_forwards"
+    ]
+  },
+
+  "trust_levels": {
+    "description": "Trust level thresholds based on total aggregated weight",
+    "levels": [
+      { "name": "none", "condition": "no attestations" },
+      { "name": "low", "condition": "total_weight < 0.5 (self-only)" },
+      { "name": "emerging", "condition": "total_weight >= 0.5, < 1.0" },
+      { "name": "verified", "condition": "total_weight >= 1.0 with external attesters" },
+      { "name": "established", "condition": "total_weight >= 2.0 with multiple external attesters" }
+    ]
+  },
+
+  "valid_events": [
+    {
+      "name": "minimal_self_attestation",
+      "event": {
+        "kind": 30386,
+        "pubkey": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "created_at": 1775064222,
+        "tags": [
+          ["d", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:lightning-node"],
+          ["service_type", "lightning-node"],
+          ["attestation_type", "self"],
+          ["node_pubkey", "03cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["p", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["dimension", "uptime_percent", "99.5", "30"],
+          ["dimension", "payment_success_rate", "0.98", "100"],
+          ["half_life_hours", "168"],
+          ["sample_window_hours", "24"],
+          ["L", "agent-reputation"],
+          ["l", "attestation", "agent-reputation"]
+        ],
+        "content": "{\"summary\":\"Self-reported metrics\"}",
+        "id": "0000000000000000000000000000000000000000000000000000000000000001",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
+      },
+      "expected_valid": true,
+      "expected_type": "self",
+      "expected_service": "lightning-node"
+    },
+    {
+      "name": "observer_attestation",
+      "event": {
+        "kind": 30386,
+        "pubkey": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "created_at": 1775064222,
+        "tags": [
+          ["d", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:lightning-node"],
+          ["service_type", "lightning-node"],
+          ["attestation_type", "observer"],
+          ["node_pubkey", "03cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["p", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["dimension", "uptime_percent", "99.5", "30"],
+          ["dimension", "payment_success_rate", "0.98", "100"],
+          ["half_life_hours", "168"],
+          ["sample_window_hours", "24"],
+          ["L", "agent-reputation"],
+          ["l", "attestation", "agent-reputation"]
+        ],
+        "content": "{\"summary\":\"Observer attestation\",\"type\":\"observer\",\"probes\":5}",
+        "id": "0000000000000000000000000000000000000000000000000000000000000002",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002"
+      },
+      "expected_valid": true,
+      "expected_type": "observer",
+      "expected_service": "lightning-node"
+    },
+    {
+      "name": "bilateral_attestation",
+      "event": {
+        "kind": 30386,
+        "pubkey": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "created_at": 1775064222,
+        "tags": [
+          ["d", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:lightning-node"],
+          ["service_type", "lightning-node"],
+          ["attestation_type", "bilateral"],
+          ["node_pubkey", "03cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["p", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["dimension", "settlement_rate", "0.95", "50"],
+          ["dimension", "dispute_rate", "0.02", "50"],
+          ["dimension", "response_time_ms", "150", "50"],
+          ["half_life_hours", "720"],
+          ["sample_window_hours", "168"],
+          ["L", "agent-reputation"],
+          ["l", "attestation", "agent-reputation"]
+        ],
+        "content": "{\"summary\":\"Bilateral from direct transactions\",\"type\":\"bilateral\",\"transactions\":50}",
+        "id": "0000000000000000000000000000000000000000000000000000000000000003",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003"
+      },
+      "expected_valid": true,
+      "expected_type": "bilateral",
+      "expected_service": "lightning-node"
+    },
+    {
+      "name": "http_service_with_64hex_nodepubkey",
+      "event": {
+        "kind": 30386,
+        "pubkey": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "created_at": 1775064222,
+        "tags": [
+          ["d", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:http-endpoint"],
+          ["service_type", "http-endpoint"],
+          ["attestation_type", "observer"],
+          ["node_pubkey", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["p", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["dimension", "uptime_percent", "100", "10"],
+          ["dimension", "response_time_ms", "120", "10"],
+          ["half_life_hours", "720"],
+          ["sample_window_hours", "24"],
+          ["L", "agent-reputation"],
+          ["l", "attestation", "agent-reputation"]
+        ],
+        "content": "{\"summary\":\"HTTP endpoint monitoring\"}",
+        "id": "0000000000000000000000000000000000000000000000000000000000000004",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004"
+      },
+      "expected_valid": true,
+      "expected_type": "observer",
+      "expected_service": "http-endpoint",
+      "note": "64-hex node_pubkey is valid for non-Lightning services (Nostr x-only pubkey)"
+    }
+  ],
+
+  "invalid_events": [
+    {
+      "name": "missing_labels",
+      "event": {
+        "kind": 30386,
+        "pubkey": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "created_at": 1775064222,
+        "tags": [
+          ["d", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:lightning-node"],
+          ["service_type", "lightning-node"],
+          ["attestation_type", "self"],
+          ["node_pubkey", "03cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["p", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["dimension", "uptime_percent", "99.5", "30"],
+          ["half_life_hours", "168"],
+          ["sample_window_hours", "24"]
+        ],
+        "content": "{}",
+        "id": "0000000000000000000000000000000000000000000000000000000000000010",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010"
+      },
+      "expected_valid": false,
+      "expected_errors": ["MISSING_L_LABEL"],
+      "note": "Missing L and l tags — required for NIP-32 namespace"
+    },
+    {
+      "name": "compact_dimension_missing_value",
+      "event": {
+        "kind": 30386,
+        "pubkey": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "created_at": 1775064222,
+        "tags": [
+          ["d", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:http-endpoint"],
+          ["service_type", "http-endpoint"],
+          ["attestation_type", "observer"],
+          ["node_pubkey", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["p", "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+          ["dimension", "uptime_percent,1.0,7"],
+          ["dimension", "response_time_ms,220,7"],
+          ["half_life_hours", "720"],
+          ["sample_window_hours", "24"],
+          ["L", "agent-reputation"],
+          ["l", "attestation", "agent-reputation"]
+        ],
+        "content": "{}",
+        "id": "0000000000000000000000000000000000000000000000000000000000000011",
+        "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011"
+      },
+      "expected_valid": false,
+      "expected_errors": ["DIM_NO_VALUE"],
+      "note": "Compact format ['dimension','name,val,sample'] has no index 2 — validator requires standard 4-element format"
+    }
+  ],
+
+  "handler_event": {
+    "description": "NIP-89 kind 31990 service handler declaration",
+    "event": {
+      "kind": 31990,
+      "pubkey": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "created_at": 1775064222,
+      "tags": [
+        ["d", "my-lightning-service"],
+        ["k", "30386"],
+        ["description", "Lightning routing service with 99.5% uptime"],
+        ["price", "100", "sats"],
+        ["protocol", "L402"],
+        ["endpoint", "https://example.com/api"],
+        ["node_pubkey", "03cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"],
+        ["L", "agent-reputation"],
+        ["l", "handler", "agent-reputation"]
+      ],
+      "content": "{\"about\":\"Lightning routing\"}",
+      "id": "0000000000000000000000000000000000000000000000000000000000000020",
+      "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020"
+    },
+    "expected_valid": true
+  }
+}

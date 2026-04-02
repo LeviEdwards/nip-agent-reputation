@@ -2,6 +2,14 @@
 
 All notable changes to NIP-30386 Agent Reputation Attestations.
 
+## [1.0.13] - 2026-04-02
+
+### Added
+- Machine-readable test vectors (`test/fixtures/test-vectors.json`) — portable across implementations
+- Fixture test suite (`test/test-fixtures.js`) — 39 tests validating against test vectors
+- Decay formula vectors, d-tag format, dimension format, valid/invalid events, aggregation, type weights
+- `scan --history` shows adoption trends over time from scan logs
+
 ## [1.0.12] - 2026-04-01
 
 ### Added
