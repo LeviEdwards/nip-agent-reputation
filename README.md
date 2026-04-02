@@ -305,7 +305,7 @@ The reference implementation runs live:
 
 ### Live Events on Nostr
 
-- 14+ attestation events published across 4 relays
+- 57+ attestation events published across 4 relays
 - 2 independent implementations (reference + karl_bott/UtilShed)
 - Automated monitoring runs every 6 hours
 
@@ -314,10 +314,14 @@ The reference implementation runs live:
 Per [nostr-protocol/nips BREAKING.md](https://github.com/nostr-protocol/nips/blob/master/BREAKING.md):
 
 - ✅ **2+ implementations** — Reference implementation + karl_bott (UtilShed.com)
-- ✅ **Events on relays** — 14+ live events on 4 major relays
+- ✅ **Events on relays** — 57+ live events on 4 major relays
 - ✅ **Kind 30386 available** — Between NIP-85 (30382-30385) and Corny Chat (30388)
 - ✅ **Conformance suite** — 98 tests validating any implementation
 - ✅ **Backward compatibility** — Legacy kind migration (LEGACY_KINDS array)
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for full version history.
 
 ## License
 

@@ -1,95 +1,129 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to NIP-30386 Agent Reputation Attestations.
 
-## [0.9.10] - 2026-03-25
-
-### Fixed
-- **Server dimensions bug** — `aggregateAttestations()` returns a flat object `{ dimName: { weightedAvg, numAttesters, ... } }`, but server.js was accessing `aggregated.dimensions` (undefined). Now uses the aggregated object directly. This was causing all reputation queries to return `dimensions: {}`.
-- **Server totalWeight calculation** — Was reading `aggregated.totalWeight` (undefined, always 0). Now computes max totalWeight across all dimensions, giving correct trust level classification.
-- **Discover pool bug** — `discoverServices(relays, opts)` called from server.js was passing relays as the pool argument. Function now auto-detects signature: `(pool, relays, opts)` or `(relays, opts)` and creates its own SimplePool when none is provided.
-- **Server test port conflict** — CLI entrypoint guard `process.argv[1]?.endsWith('server.js')` matched `test-server.js`. Fixed with regex `/(?:^|[/\\])server\.js$/` for exact match only.
+## [1.0.12] - 2026-04-01
 
 ### Added
-- **Public reputation API proxy** — dispatches.mystere.me now proxies `/api/reputation/*` routes to the reputation server. Endpoints: GET `/api/reputation/<pubkey>`, GET `/api/reputation/discover`, POST `/api/reputation/validate`, GET `/api/reputation/health`.
-
-## [0.9.9] - 2026-03-25
-
-### Fixed
-- Server double-parse bug, WebOfTrust async bug, compact dimension tag parser
-- See README for full v0.9.9 notes
-
-## [0.9.8] - 2026-03-24
+- `scan` CLI command — scan relays for all kind 30386 events and report protocol health
+- `scan --validate` — run full validation on every event found
+- `scan --json` — machine-readable JSON output for automation
+- `scan --history` — adoption trends over time (from scan logs)
+- Scan log persistence in `data/scan-logs/` for tracking adoption
 
 ### Fixed
-- Broken `LEGACY_ATTESTATION_KIND` export in index.js (renamed to `LEGACY_KINDS`)
-- README code example used wrong destructuring for dimension objects
+- Validator now accepts 64-hex `node_pubkey` (Nostr x-only pubkeys for HTTP services)
+- Scan validation getter bug — `valid` property was lost during object spread
 
 ### Changed
-- package.json version bumped to match actual release (was stuck at 0.9.4)
+- NIP spec updated: `node_pubkey` may be 64-hex for non-Lightning services
 
-## [0.9.7] - 2026-03-24
+## [1.0.11] - 2026-04-01
 
 ### Added
-- `examples/query-reputation.js` — query attestations without LND access
-- `examples/observe-and-attest.js` — observe a node and publish attestation
-- Implementation section in NIP-XX.md
+- Interactive playground at `/playground` — validate events, query reputation, discover services, copy templates
+- `IMPLEMENTING.md` — 343-line implementation guide for any language
+- Playground proxied to public at `dispatches.mystere.me/api/reputation/playground`
+- 9 new server tests for playground endpoint
+- `nip-pr/AWESOME-NOSTR-PR.md` — PR materials for awesome-nostr listing
+
+## [1.0.10] - 2026-03-31
+
+### Added
+- `examples/` directory with 3 demo scripts (payment-gate, discover-agents, publish-attestation)
+- SDK string constructor — `new ReputationClient('https://api.example.com')` 
+- 2 new SDK tests for string constructor
+
+## [1.0.9] - 2026-03-30
+
+### Added
+- `nip-pr/` directory with PR-INSTRUCTIONS.md and XX.md (NIP spec ready for submission)
+- Version bump infrastructure across package.json, cli.js, server.js
 
 ### Fixed
-- CLI version string updated from v0.6 to v0.9.6
+- Server version string was hardcoded to 1.0.5 — now reads from package.json pattern
+- `run-all.sh` test runner stopping early due to held WebSocket connections
+- All 12 test files now call `process.exit(0)` on completion
 
-## [0.9.6] - 2026-03-24
+## [1.0.8] - 2026-03-28
 
-### Fixed
-- `observeNodeFromGraph()` returned raw `ChannelSnapshot` instead of `ObservationSession`, causing `buildObserverAttestation` crash on `computeDimensions()`
-- ACINQ now correctly reports 1981 channels in observer attestations
+### Added
+- Conformance test suite (`test/conformance.js`) — 98 tests across 4 test vectors
+- Test vectors: minimal valid self, observer, missing labels (negative), compact dimensions (interop)
+- Live relay conformance mode: `node test/conformance.js --live`
 
 ### Changed
-- Fresh observer attestations published for both peers with corrected data
+- NIP-XX.md updated: domain-based d-tag subjects allowed, 64-hex pubkeys in node_pubkey
 
-## [0.9.5] - 2026-03-23
-
-### Added
-- Fresh self-attestation with live relay verification
-- Relay inventory check confirming all 4 attestation types present
-
-## [0.9.4] - 2026-03-23
-
-### Fixed
-- Kind number migration: 30385 → 30386 (30385 collides with NIP-85 identifier assertions)
-- All source files, NIP-XX.md, server default port, dashboard updated to kind 30386
-- `LEGACY_KINDS` array replaces individual legacy kind constants
-- `queryAttestations()` queries all four kinds (30386 + 3 legacy)
-- Relay verification confirmed working end-to-end
-
-## [0.9.3] - 2026-03-23
+## [1.0.7] - 2026-03-27
 
 ### Added
-- PR-DESCRIPTION.md for NIP submission
+- SDK (`sdk/reputation-client.js`) — zero-dependency client with `checkAndDecide()` one-call flow
+- Fail-closed error handling in SDK
+- 35 SDK tests including live API integration tests
+- SDK exported from package index.js
 
-### Fixed
-- Kind number migration: 30388 → 30385 (30388 collides with Corny Chat Slide Set)
-
-## [0.9.2] - 2026-03-23
-
-### Fixed
-- server.js `port:0` falsy bug — now uses `options.port !== undefined` check
-- `QUERY_TIMEOUT_MS` reads from environment variable
-- test-server.js sets timeout to 3000ms for reliable CI
-
-## [0.9.1] - 2026-03-22
+## [1.0.6] - 2026-03-26
 
 ### Added
-- Service discovery module (`discover.js`) with 43 tests
-- Validation module (`validate.js`) with 85 tests
-- Web-of-trust recursive scoring
+- Billing module (`src/billing.js`) — recurring monthly invoicing for monitored endpoints
+- Billing CLI commands: `billing`, `billing --due`, `billing --accounts`
+- 12 billing tests
+- Billing wired into fulfillment pipeline
 
-## [0.9.0] - 2026-03-22
+## [1.0.5] - 2026-03-25
 
 ### Added
-- Complete reference implementation: attestation, bilateral, observer, handler, auto-publish
-- CLI with collect, publish, query, discover, serve commands
-- REST API server
-- 461 tests across 9 test files
-- Live events published to 4 relays (damus, nos.lol, primal, snort.social)
-- NIP-XX.md spec (300+ lines)
+- Fulfillment module (`src/fulfill.js`) — process attestation orders from `/attest` landing page
+- Order scanning and batch processing
+- 7 fulfillment tests
+- `scripts/check-orders.sh` and `scripts/fulfill-order.sh`
+
+## [1.0.4] - 2026-03-25
+
+### Added
+- HTTP API server (`src/server.js`) — REST endpoints for reputation, discovery, validation
+- Badge endpoint (`/reputation/badge/:pubkey`) — SVG reputation badges
+- Directory endpoint (`/directory`) — HTML directory of attested services  
+- Validation endpoint (`POST /validate`) — validate attestation events via API
+- 58 server tests
+
+## [1.0.3] - 2026-03-24
+
+### Added
+- Validation module (`src/validate.js`) — comprehensive event validation
+- `validateAttestation()`, `validateHandler()`, `validateBatch()` functions
+- 85 validation tests covering all tag requirements, edge cases, strict mode
+
+## [1.0.2] - 2026-03-24
+
+### Added
+- Service discovery (`src/discover.js`) — find agent services via NIP-89 kind 31990
+- Discovery filters: service type, protocol, max age, min trust weight
+- Reputation enrichment for discovered services
+- 43 discovery tests
+
+## [1.0.1] - 2026-03-23
+
+### Added
+- Web-of-trust scoring (`src/web-of-trust.js`) — recursive trust-weighted reputation
+- Sybil detection: uniform scoring flags, low-trust attester warnings
+- Cycle prevention in trust graph traversal
+- 54 WoT tests
+
+## [1.0.0] - 2026-03-22
+
+### Added
+- Initial release
+- Core attestation builder (`src/attestation.js`) — self, observer, bilateral types
+- LND metrics collection (`src/lnd.js`)
+- Observer attestation (`src/observer.js`) — probe endpoints, snapshot channels
+- Bilateral attestation (`src/bilateral.js`) — transaction recording and attestation building
+- Service handler declaration (`src/handler.js`) — NIP-89 kind 31990
+- Auto-publish logic (`src/auto-publish.js`) — change detection, rate limiting
+- CLI tool (`src/cli.js`) — collect, publish, query, verify, record, history, attest, observe, trust, discover
+- Exponential decay formula: `clamp(2^(-age/half_life), 0, 1)`
+- Kind 30386 (parameterized replaceable event)
+- NIP-32 labeling (`L`/`l` tags for `agent-reputation` namespace)
+- Publishing to 4 relays: nos.lol, damus, primal, snort.social
+- NIP-XX.md specification document

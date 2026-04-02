@@ -106,6 +106,7 @@ async function main() {
     case 'billing':
       return cmdBilling();
     case 'scan':
+      if (process.argv.includes('--history')) return cmdScanHistory();
       return cmdScan();
     default:
       console.log(`NIP Agent Reputation — Reference Implementation v1.0.12
@@ -167,6 +168,8 @@ Protocol scan:
   node src/cli.js scan --relays <url1,url2>        Scan specific relays
   node src/cli.js scan --json                      Output as JSON
   node src/cli.js scan --validate                  Run full validation on every event
+  node src/cli.js scan --history                   Show adoption trends over time
+  node src/cli.js scan --no-log                    Don't save scan results to log
 `);
       process.exit(1);
   }
@@ -1138,6 +1141,116 @@ async function cmdScan() {
     console.log(`\n  ═══════════════════════════════════════════\n`);
   }
 
+  // Save scan log for adoption tracking
+  const scanLog = {
+    timestamp: new Date().toISOString(),
+    totalEvents: events.length,
+    uniquePublishers: pubCount,
+    publishers: Object.fromEntries(
+      Object.entries(publishers).map(([pk, v]) => [pk, {
+        events: v.count,
+        lastSeen: new Date(v.lastSeen * 1000).toISOString()
+      }])
+    ),
+    kinds,
+    attestationTypes: types,
+    serviceTypes,
+    dimensionCount: Object.keys(dimensions).length,
+    compliance: {
+      L: Math.round(hasLTag / n * 100),
+      l: Math.round(haslTag / n * 100),
+      nodePubkey: Math.round(hasNodePubkey / n * 100),
+      pTag: Math.round(hasPTag / n * 100),
+    },
+    validation: doValidate ? {
+      passed: validationResults.filter(r => r.valid).length,
+      failed: validationResults.filter(r => !r.valid).length,
+    } : undefined,
+  };
+
+  if (!args.includes('--no-log')) {
+    const logDir = join(__dirname, '..', 'data', 'scan-logs');
+    if (!existsSync(logDir)) { const { mkdirSync } = await import('fs'); mkdirSync(logDir, { recursive: true }); }
+    const logFile = join(logDir, `${new Date().toISOString().slice(0, 10)}.json`);
+
+    let entries = [];
+    if (existsSync(logFile)) {
+      try { entries = JSON.parse(readFileSync(logFile, 'utf-8')); } catch { entries = []; }
+    }
+    entries.push(scanLog);
+    writeFileSync(logFile, JSON.stringify(entries, null, 2));
+    if (!jsonOutput) console.log(`  Scan logged to ${logFile}\n`);
+  }
+
+  process.exit(0);
+}
+
+async function cmdScanHistory() {
+  const logDir = join(__dirname, '..', 'data', 'scan-logs');
+  if (!existsSync(logDir)) {
+    console.log('No scan logs found. Run: node src/cli.js scan');
+    process.exit(0);
+  }
+
+  const { readdirSync } = await import('fs');
+  const files = readdirSync(logDir).filter(f => f.endsWith('.json')).sort();
+
+  if (files.length === 0) {
+    console.log('No scan logs found. Run: node src/cli.js scan');
+    process.exit(0);
+  }
+
+  console.log(`\n  NIP-30386 Adoption History`);
+  console.log(`  ═══════════════════════════════════════════\n`);
+  console.log(`  ${'Date'.padEnd(12)} ${'Events'.padStart(7)} ${'Pubs'.padStart(5)} ${'Kind'.padStart(6)} ${'Valid'.padStart(6)} ${'L%'.padStart(5)} ${'l%'.padStart(5)}`);
+  console.log(`  ${'─'.repeat(12)} ${'─'.repeat(7)} ${'─'.repeat(5)} ${'─'.repeat(6)} ${'─'.repeat(6)} ${'─'.repeat(5)} ${'─'.repeat(5)}`);
+
+  const allPublishers = new Set();
+
+  for (const file of files) {
+    try {
+      const entries = JSON.parse(readFileSync(join(logDir, file), 'utf-8'));
+      const latest = entries[entries.length - 1]; // take last scan of the day
+      const date = file.replace('.json', '');
+      const k30386 = latest.kinds?.['30386'] || 0;
+      const valid = latest.validation ? `${latest.validation.passed}/${latest.totalEvents}` : '—';
+      const L = latest.compliance?.L ?? '—';
+      const l = latest.compliance?.l ?? '—';
+
+      console.log(`  ${date.padEnd(12)} ${String(latest.totalEvents).padStart(7)} ${String(latest.uniquePublishers).padStart(5)} ${String(k30386).padStart(6)} ${String(valid).padStart(6)} ${String(L + '%').padStart(5)} ${String(l + '%').padStart(5)}`);
+
+      if (latest.publishers) {
+        for (const pk of Object.keys(latest.publishers)) allPublishers.add(pk);
+      }
+    } catch { /* skip corrupt files */ }
+  }
+
+  console.log(`\n  All-time unique publishers: ${allPublishers.size}`);
+
+  // Show new publishers per day
+  const seenBy = {};
+  for (const file of files) {
+    try {
+      const entries = JSON.parse(readFileSync(join(logDir, file), 'utf-8'));
+      const latest = entries[entries.length - 1];
+      const date = file.replace('.json', '');
+      if (latest.publishers) {
+        for (const pk of Object.keys(latest.publishers)) {
+          if (!seenBy[pk]) seenBy[pk] = date;
+        }
+      }
+    } catch { /* skip */ }
+  }
+
+  const firstSeen = Object.entries(seenBy).sort((a, b) => a[1].localeCompare(b[1]));
+  if (firstSeen.length > 0) {
+    console.log(`\n  Publisher Timeline:`);
+    for (const [pk, date] of firstSeen) {
+      console.log(`    ${date}  ${pk.slice(0, 16)}...`);
+    }
+  }
+
+  console.log(`\n  ═══════════════════════════════════════════\n`);
   process.exit(0);
 }
 
