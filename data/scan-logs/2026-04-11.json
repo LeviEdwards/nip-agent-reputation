@@ -1,0 +1,120 @@
+[
+  {
+    "timestamp": "2026-04-11T14:03:30.039Z",
+    "totalEvents": 23,
+    "uniquePublishers": 2,
+    "publishers": {
+      "1bb7ae47020335130b9654e3c13633f92446c4717e859f82b46e6363118c6ead": {
+        "events": 12,
+        "lastSeen": "2026-04-10T15:03:41.000Z"
+      },
+      "c82ba63605e4f94647322ab7f26a4bad25c88fe27f87ed8706ca4082e900c158": {
+        "events": 11,
+        "lastSeen": "2026-03-25T23:56:00.000Z"
+      }
+    },
+    "kinds": {
+      "30078": 4,
+      "30385": 2,
+      "30386": 16,
+      "30388": 1
+    },
+    "attestationTypes": {
+      "observer": 19,
+      "self": 4
+    },
+    "serviceTypes": {
+      "http-endpoint": 3,
+      "lightning-node": 9,
+      "web-agent": 10,
+      "network-data": 1
+    },
+    "dimensionCount": 14,
+    "compliance": {
+      "L": 100,
+      "l": 96,
+      "nodePubkey": 57,
+      "pTag": 39
+    }
+  },
+  {
+    "timestamp": "2026-04-11T14:06:18.210Z",
+    "totalEvents": 23,
+    "uniquePublishers": 2,
+    "publishers": {
+      "1bb7ae47020335130b9654e3c13633f92446c4717e859f82b46e6363118c6ead": {
+        "events": 12,
+        "lastSeen": "2026-04-10T15:03:41.000Z"
+      },
+      "c82ba63605e4f94647322ab7f26a4bad25c88fe27f87ed8706ca4082e900c158": {
+        "events": 11,
+        "lastSeen": "2026-03-25T23:56:00.000Z"
+      }
+    },
+    "kinds": {
+      "30078": 4,
+      "30385": 2,
+      "30386": 16,
+      "30388": 1
+    },
+    "attestationTypes": {
+      "observer": 19,
+      "self": 4
+    },
+    "serviceTypes": {
+      "http-endpoint": 3,
+      "lightning-node": 9,
+      "web-agent": 10,
+      "network-data": 1
+    },
+    "dimensionCount": 14,
+    "compliance": {
+      "L": 100,
+      "l": 96,
+      "nodePubkey": 57,
+      "pTag": 39
+    },
+    "validation": {
+      "passed": 22,
+      "failed": 1
+    }
+  },
+  {
+    "timestamp": "2026-04-11T23:43:44.949Z",
+    "totalEvents": 23,
+    "uniquePublishers": 2,
+    "publishers": {
+      "1bb7ae47020335130b9654e3c13633f92446c4717e859f82b46e6363118c6ead": {
+        "events": 12,
+        "lastSeen": "2026-04-11T15:01:36.000Z"
+      },
+      "c82ba63605e4f94647322ab7f26a4bad25c88fe27f87ed8706ca4082e900c158": {
+        "events": 11,
+        "lastSeen": "2026-03-25T23:56:00.000Z"
+      }
+    },
+    "kinds": {
+      "30078": 4,
+      "30385": 2,
+      "30386": 16,
+      "30388": 1
+    },
+    "attestationTypes": {
+      "observer": 19,
+      "self": 4
+    },
+    "serviceTypes": {
+      "http-endpoint": 3,
+      "lightning-node": 9,
+      "web-agent": 10,
+      "network-data": 1
+    },
+    "dimensionCount": 14,
+    "compliance": {
+      "L": 100,
+      "l": 96,
+      "nodePubkey": 57,
+      "pTag": 39
+    }
+  }
+]

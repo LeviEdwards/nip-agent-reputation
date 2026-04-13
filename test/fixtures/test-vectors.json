@@ -254,7 +254,7 @@
       "note": "Missing L and l tags — required for NIP-32 namespace"
     },
     {
-      "name": "compact_dimension_missing_value",
+      "name": "compact_dimension_format",
       "event": {
         "kind": 30386,
         "pubkey": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
@@ -276,9 +276,9 @@
         "id": "0000000000000000000000000000000000000000000000000000000000000011",
         "sig": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011"
       },
-      "expected_valid": false,
-      "expected_errors": ["DIM_NO_VALUE"],
-      "note": "Compact format ['dimension','name,val,sample'] has no index 2 — validator requires standard 4-element format"
+      "expected_valid": true,
+      "expected_warnings": ["DIM_COMPACT_FORMAT"],
+      "note": "Compact format ['dimension','name,val,sample'] — accepted for interop but non-standard. Implementations SHOULD warn."
     }
   ],
 
